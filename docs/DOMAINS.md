@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-02T05:58:00Z
+timestamp: 2026-10-02T06:05:00Z
 code: []
 ---
 
@@ -123,6 +123,29 @@ gcloud iap web add-iam-policy-binding \
 
 Turn the gate off with `--no-iap`. With IAP on, the default `*.run.app` URL returns a `302`
 to Google sign-in instead of a `403`.
+
+## HTTPS is enforced by Google, not Cloudflare
+
+A Cloud Run domain mapping serves HTTPS with a Google-managed certificate, and the Google
+front end answers plain HTTP with a `302` to the `https://` URL. Verified on
+`reports.kaz.markets`:
+
+```
+http://reports.kaz.markets  ->  302  ->  https://reports.kaz.markets/
+```
+
+So a mapped subdomain is HTTPS-only with no Cloudflare setting involved. Cloudflare's
+**Always Use HTTPS** toggle does not apply: it acts on proxied (orange cloud) records only,
+and a mapping's record has to stay DNS-only for the certificate to issue. Grey-cloud traffic
+never reaches Cloudflare, so that toggle would do nothing here.
+
+Browsers can be told to refuse plain HTTP for the host outright with HSTS. Add it at the app
+once the certificate is live, not before: HSTS is cached by the browser for its `max-age`, so
+enabling it while issuance is still pending would make the host unreachable if anything failed.
+
+```nginx
+add_header Strict-Transport-Security "max-age=31536000" always;
+```
 
 ## The one-time build grants
 
