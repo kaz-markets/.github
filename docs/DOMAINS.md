@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-02T06:07:00Z
+timestamp: 2026-10-02T06:10:00Z
 code: []
 ---
 
@@ -75,6 +75,10 @@ my-service CNAME        ghs.googlehosted.com.
 
 Add that in Cloudflare as a **CNAME, DNS only (grey cloud)**. Proxying (orange cloud) hides
 the origin from Google and the managed certificate never issues.
+
+A **root domain** is the exception to the CNAME rule: DNS forbids a CNAME at the apex. Map it
+the same way and Google prints four `A` and four `AAAA` records instead of one CNAME. Add all
+eight, DNS only. `kaz.markets` itself is mapped this way.
 
 ## Add a static site
 
@@ -175,18 +179,18 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 
 ## Status
 
+- `kaz.markets` (the apex) -> Cloud Run service `bracco-app`, the player web app from
+  `kaz-control/app`. Public for the demo via `--no-invoker-iam-check`, not IAP.
 - `reports.kaz.markets` -> Cloud Run service `reports`, IAP gated for `domain:kaz.markets`.
-- DNS added at Cloudflare: `CNAME reports -> ghs.googlehosted.com`, DNS only, in the
-  `Dh@drhamilton.dev's Account` zone.
-- The managed certificate is still `CertificateProvisioned: CertificatePending`. Google
-  issues it asynchronously once the record resolves; this can take from minutes to hours.
+- DNS at Cloudflare, in the `Dh@drhamilton.dev's Account` zone, all DNS only:
+  `CNAME reports -> ghs.googlehosted.com`, and at the apex four `A` plus four `AAAA` records
+  pointing at the addresses Google returned for the mapping.
+- Both managed certificates are still `CertificateProvisioned: CertificatePending`. Google
+  issues them asynchronously once the records resolve; this can take from minutes to hours.
   Nothing else is required on our side.
 
 ## What this does not cover
 
-- The apex `kaz.markets` and `www` are deliberately unset. Nothing serves there, and that is
-  the decision, not an oversight. When the apex does have something to show, map it to a Cloud
-  Run service like any other host: a domain mapping needs an A/AAAA record rather than a
-  subdomain CNAME, and the HTTPS redirect comes with the mapping. Do not add a record at the
-  apex before there is a service behind it.
+- `www.kaz.markets` is deliberately unset, and that is the decision, not an oversight. Map it
+  to the same service as the apex if it is ever wanted; it takes a CNAME, unlike the apex.
 - `admin.kaz.markets` (the back office) is a separate decision, not mapped here.
