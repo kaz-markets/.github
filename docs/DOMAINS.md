@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-02T05:33:56Z
+timestamp: 2026-10-02T05:49:00Z
 code: []
 ---
 
@@ -142,7 +142,11 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 ## Status
 
 - `reports.kaz.markets` -> Cloud Run service `reports`, IAP gated for `domain:kaz.markets`.
-- DNS record not yet added at Cloudflare; certificate is `CertificatePending` until it is.
+- DNS added at Cloudflare: `CNAME reports -> ghs.googlehosted.com`, DNS only, in the
+  `Dh@drhamilton.dev's Account` zone.
+- The managed certificate is still `CertificateProvisioned: CertificatePending`. Google
+  issues it asynchronously once the record resolves; this can take from minutes to hours.
+  Nothing else is required on our side.
 
 ## What this does not cover
 
