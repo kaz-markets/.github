@@ -1,0 +1,40 @@
+name: frontend guard
+
+# Reusable. A repository calls it with:
+#
+#   jobs:
+#     frontend:
+#       uses: kaz-markets/.github/.github/workflows/frontend-guard.yml@main
+#
+# Flags a pull request that changes the front end. `mode: warn` annotates,
+# `mode: fail` blocks. The AGENTS.md rule is the real guard; this is the reminder.
+
+on:
+  workflow_call:
+    inputs:
+      protected:
+        description: Space-separated path prefixes that are the front end.
+        type: string
+        default: "app/ admin/ mobile/ site/ bet105-concept/"
+      mode:
+        description: warn or fail.
+        type: string
+        default: warn
+      allow-authors:
+        description: Comma-separated logins that may change the front end.
+        type: string
+        default: ""
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: kaz-markets/.github/actions/frontend-guard@main
+        with:
+          protected: ${{ inputs.protected }}
+          mode: ${{ inputs.mode }}
+          allow-authors: ${{ inputs.allow-authors }}

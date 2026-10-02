@@ -1,0 +1,37 @@
+name: Frontend guard
+description: Flag a diff that changes the front end.
+
+inputs:
+  protected:
+    description: Space-separated path prefixes that are the front end.
+    required: false
+    default: "app/ admin/ mobile/ site/ bet105-concept/"
+  mode:
+    description: warn or fail.
+    required: false
+    default: warn
+  allow-authors:
+    description: Comma-separated logins that may change the front end.
+    required: false
+    default: ""
+  base:
+    description: Ref to diff against. Empty derives it from the event.
+    required: false
+    default: ""
+  author:
+    description: The pull request author login.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Compare the diff to the front-end paths
+      shell: bash
+      env:
+        PROTECTED: ${{ inputs.protected }}
+        MODE: ${{ inputs.mode }}
+        ALLOW: ${{ inputs.allow-authors }}
+        BASE: ${{ inputs.base != '' && inputs.base || github.event.pull_request.base.sha || github.event.before || '' }}
+        AUTHOR: ${{ inputs.author != '' && inputs.author || github.event.pull_request.user.login || github.actor }}
+      run: bash "${{ github.action_path }}/../../scripts/frontend-guard.sh"

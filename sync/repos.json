@@ -1,0 +1,18 @@
+{
+  "repos": [
+    {
+      "name": "kaz-socket",
+      "owner": "danhamilt",
+      "protected": "public/",
+      "allowAuthors": "danhamilt",
+      "bootstrap": true
+    },
+    {
+      "name": "prediction-markets-report",
+      "owner": "danhamilt",
+      "protected": "index.html",
+      "allowAuthors": "danhamilt",
+      "bootstrap": true
+    }
+  ]
+}
