@@ -10,18 +10,19 @@ repository owns the rules and the checks that every bundle is held to.
 | Path | What it is |
 |---|---|
 | `profile/README.md` | The organization page on GitHub |
-| `AGENTS.md` | The canonical agent rules. `sync` writes a copy into each repository |
+| `AGENTS.md` | The canonical agent rules. Each repository carries a copy |
 | `PULL_REQUEST_TEMPLATE.md` | Inherited by every repository that does not define its own |
 | `scripts/okf.mjs` | Check and generate a knowledge bundle |
 | `scripts/frontend-guard.sh` | Flag a diff that changes the front end |
-| `scripts/sync.mjs` | Fan the rules and the caller workflow into each repository as a PR |
-| `sync/repos.json` | The manifest: which repositories, whose they are, which paths are front end |
+| `scripts/sync.mjs` | Developer machine tool: copies the rules and the caller workflow into a repository |
+| `sync/repos.json` | The manifest `sync.mjs` reads: which repositories, whose they are, which paths are front end |
 | `actions/okf-check/` | Composite action wrapping `okf.mjs` |
 | `actions/frontend-guard/` | Composite action wrapping `frontend-guard.sh` |
 | `.github/workflows/okf.yml` | Reusable: frontmatter, index parity, doc freshness |
 | `.github/workflows/frontend-guard.yml` | Reusable: flags a front-end diff |
-| `.github/workflows/org-index.yml` | Daily: collects each `docs/INDEX.md` into `okf/` |
-| `.github/workflows/sync.yml` | Dispatch: rolls the above into the repositories |
+
+There are only two workflows here, and neither needs a secret. Anything that would need one
+does not belong in this repository.
 
 ## Adopting it in a repository
 
@@ -41,7 +42,16 @@ jobs:
     uses: kaz-markets/.github/.github/workflows/frontend-guard.yml@main
 ```
 
-Or run `workflow_dispatch` on `sync.yml` and let it open the pull request for you.
+To do it by hand, copy four files: `AGENTS.md`, `scripts/okf.mjs`,
+`.github/workflows/okf.yml` (the caller above, with the repository's protected paths) and
+`.github/CODEOWNERS`. `scripts/sync.mjs` is the same thing automated for a developer machine:
+
+```bash
+GH_TOKEN=<token> node scripts/sync.mjs --dry-run
+```
+
+The token is passed in the environment and never stored. That is the trade: no stored secret,
+so onboarding a repository is a deliberate act rather than a scheduled job.
 
 ## The bundle
 
@@ -53,15 +63,22 @@ Or run `workflow_dispatch` on `sync.yml` and let it open the pull request for yo
 - `okf.mjs --check --base <ref>` fails a pull request when a diff touches code a doc covers
   and that doc is not in the same diff.
 
-## Organization secrets and variables
+## Secrets
 
-Secrets and configuration live at the organization, not per repository, so one value serves
-every repository and there is one place to rotate. A workflow reads them by name
-(`secrets.X`, `vars.X`) and does not care which level they come from.
+**None.** Nothing in this repository needs a secret. Both workflows run on the `GITHUB_TOKEN`
+that GitHub issues to every workflow run, scoped to the repository the run is in. That covers
+everything a repository does to itself, which is all either check does.
 
-Organization settings > Secrets and variables > Actions.
+The only automation that cannot use `GITHUB_TOKEN` is one that acts on *another* repository,
+because that token cannot push to it or read it when it is private. Both such workflows were
+removed: `sync.mjs` runs from a developer machine with a token passed in the environment
+instead, and the org-wide index is a job for the GCP service when that exists, not a stored
+PAT here.
 
-### Variables (not sensitive)
+## Variables for GCP
+
+Organization settings > Secrets and variables > Actions. Variables, not secrets: none of
+these is sensitive.
 
 | Name | Meaning |
 |---|---|
@@ -71,17 +88,9 @@ Organization settings > Secrets and variables > Actions.
 | `WIF_SERVICE_ACCOUNT` | The deploying service account |
 | `VITE_PUBLIC_BASE_URL` | The published base URL for a built front end |
 
-### Secrets
-
-| Name | What it is | Who needs it |
-|---|---|---|
-| `OKF_TOKEN` | Fine-grained PAT. Contents read and write, Pull requests write, on the repositories in `sync/repos.json` | `sync.yml` (pushes a branch and opens PRs in other repositories) and `org-index.yml` (reads private bundles) |
-
-`GITHUB_TOKEN` is automatic and covers everything a repository does to itself. It cannot
-push to another repository and cannot read a private one, which is the only reason
-`OKF_TOKEN` exists. Access for both should be scoped to the repositories that need them.
-
-Every other workflow needs no secret at all.
+The names match what `kaz-control`'s deploy workflow already reads, so moving them from the
+repository to the organization needs no workflow change. They can be set at the organization
+level once the GCP project exists, and read per repository with `vars.NAME`.
 
 ## Cloud
 
