@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-02T05:49:00Z
+timestamp: 2026-10-02T05:58:00Z
 code: []
 ---
 
@@ -30,13 +30,24 @@ Cloudflare DNS                       GCP (kaz-markets-prod, us-east4)
 The name before the dot in the domain (`reports`) is the DNS record name Cloudflare wants.
 Google serves the certificate; it is provisioned only after the record resolves.
 
-## Public access is off, everywhere
+## Public access and Domain Restricted Sharing
 
 The organization sets Domain Restricted Sharing
 (`constraints/iam.allowedPolicyMemberDomains`) with `allowedValues` of the `kaz.markets`
-Workspace customer id (`C0146z9gi`). `allUsers` cannot be granted, so **no service can be
-made public** and `--allow-unauthenticated` silently fails to apply. This is deliberate. A
-service is reached by IAP, not by opening it to the world.
+Workspace customer id (`C0146z9gi`). `allUsers` cannot be granted, so
+`--allow-unauthenticated` silently fails to apply.
+
+The default posture is a private service reached by IAP. Under DRS the one supported way to
+make a service public is to disable the Cloud Run Invoker IAM check, which bypasses the IAM
+gate entirely:
+
+```bash
+gcloud run services update "$SERVICE" \
+  --project kaz-markets-prod --region us-east4 --no-invoker-iam-check
+```
+
+Current exception: `bracco-app` (the player web app) is public this way for the demo. Treat
+that as a demo posture, not the norm; every other service stays IAP-gated.
 
 ## Add a service
 

@@ -4,7 +4,7 @@ title: "Hosting and the free tier"
 description: "Where each piece runs, what it costs nothing to run, and what cannot leave GCP."
 owner: dan
 tags: [hosting, gcp, github, free-tier, cost]
-timestamp: 2026-10-02T05:11:14Z
+timestamp: 2026-10-02T05:57:00Z
 code: []
 ---
 
@@ -21,7 +21,7 @@ platform normally pays a cloud provider for is free on GitHub, and only two thin
 | Job | Where | Free because |
 |---|---|---|
 | Build a container image | GitHub Actions | 2,000 minutes a month private, unlimited public. Free plan does not overage-bill, it pauses |
-| Store the image | GHCR (`ghcr.io`) | Free and unlimited for public images. Private images count against 500MB storage |
+| Store the image | Artifact Registry (in-region), or GHCR | Artifact Registry pulls with the project identity; GHCR is free only for public images. See "Where the images live" |
 | Any cron | Actions `schedule` | Free, but best-effort: runs can be delayed, and a schedule is disabled after 60 days of repository inactivity. Maintenance only, never anything time-critical |
 | Batch work | Actions runners | 2 vCPU, 7GB, 6 hour cap. Simulators, scrapers, migrations, smoke tests |
 | Build output, reports | Releases, or Actions artifacts | Artifacts: 500MB, 90 days. Releases: 100MB per file |
@@ -54,10 +54,34 @@ gateway all charge whether or not anyone is using them. All three are banned by 
 custom domain on Cloud Run is the one place to check before committing, because some domain
 mapping paths sit behind a load balancer.
 
-## What this does not cover
+## Where the images live
 
-A public container image is free; a private one is not, and Cloud Run cannot pull a private
-GHCR image without a registry credential. That trade decides whether an image belongs in GHCR
-or Artifact Registry, and it is per image, not a blanket rule.
+Artifact Registry, in the same project and region as the service:
+`$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/<repository>/<image>`. Cloud Run pulls it with the
+project identity, so the image stays private and no registry credential is stored. GHCR was
+the alternative, but a private GHCR package cannot be pulled by Cloud Run without a
+credential; GHCR only helps once an image is public, which is the wrong default for a private
+front end.
+
+Artifact Registry's Always Free storage (0.5 GB) covers `us-central1`, `us-east1` and
+`us-west1`. The services run in `us-east4`, so image storage there is a small paid SKU. Every
+repository carries a cleanup policy so it stays bounded. The policy file is
+`infra/artifact-registry-cleanup-policy.json` beside this bundle:
+
+- keep the 5 most recent versions of each package,
+- delete untagged versions older than 7 days (the per-build attestation manifests),
+- delete anything older than 30 days.
+
+Apply or re-apply it, once per repository:
+
+```bash
+gcloud artifacts repositories set-cleanup-policies <repo> \
+  --location=us-east4 --project=kaz-markets-prod \
+  --policy=infra/artifact-registry-cleanup-policy.json
+```
+
+A Keep policy overrides a matching Delete policy, so the recent versions survive the age rules.
+The policy is server-side and is not created by Terraform or a workflow; recreating a
+repository means re-applying it.
 
 Quota figures move. Confirm them against the current pricing pages before relying on them.
