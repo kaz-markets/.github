@@ -1,0 +1,33 @@
+# This repository holds the org rules and the shared Node scripts (scripts/*.mjs).
+# Nothing generated belongs in it.
+
+# ---- Dependencies ----
+node_modules/
+**/node_modules/
+
+# ---- Secrets / local config ----
+.env
+.env.*
+!.env.example
+**/CREDENTIALS*.md
+*.pem
+*.key
+
+# ---- Build and tool output ----
+dist/
+**/dist/
+*.tsbuildinfo
+**/*.tsbuildinfo
+.npm/
+npm-debug.log*
+
+# ---- Logs ----
+*.log
+
+# ---- OS / editors ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
