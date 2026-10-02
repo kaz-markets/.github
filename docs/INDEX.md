@@ -18,5 +18,6 @@ documented yet.
 | Doc | Covers | Owner | Code |
 | --- | --- | --- | --- |
 | [HOSTING.md](HOSTING.md) | Where each piece runs, what it costs nothing to run, and what cannot leave GCP. | dan |  |
+| [TASKS.md](TASKS.md) | Where work is tracked, what belongs where, and the rule that keeps notifications from pinging people. | dan |  |
 
 <!-- okf:index:end -->
