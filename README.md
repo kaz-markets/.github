@@ -53,8 +53,40 @@ Or run `workflow_dispatch` on `sync.yml` and let it open the pull request for yo
 - `okf.mjs --check --base <ref>` fails a pull request when a diff touches code a doc covers
   and that doc is not in the same diff.
 
-## Secrets
+## Organization secrets and variables
 
-`OKF_TOKEN` is a fine-grained PAT with, on the repositories in `sync/repos.json`:
-Contents read and write, and Pull requests write. `org-index.yml` reads private bundles with
-it; `sync.yml` needs it to push. Without it, private repositories are skipped.
+Secrets and configuration live at the organization, not per repository, so one value serves
+every repository and there is one place to rotate. A workflow reads them by name
+(`secrets.X`, `vars.X`) and does not care which level they come from.
+
+Organization settings > Secrets and variables > Actions.
+
+### Variables (not sensitive)
+
+| Name | Meaning |
+|---|---|
+| `GCP_PROJECT_ID` | The GCP project |
+| `GCP_REGION` | The region |
+| `WIF_PROVIDER` | The Workload Identity Federation provider |
+| `WIF_SERVICE_ACCOUNT` | The deploying service account |
+| `VITE_PUBLIC_BASE_URL` | The published base URL for a built front end |
+
+### Secrets
+
+| Name | What it is | Who needs it |
+|---|---|---|
+| `OKF_TOKEN` | Fine-grained PAT. Contents read and write, Pull requests write, on the repositories in `sync/repos.json` | `sync.yml` (pushes a branch and opens PRs in other repositories) and `org-index.yml` (reads private bundles) |
+
+`GITHUB_TOKEN` is automatic and covers everything a repository does to itself. It cannot
+push to another repository and cannot read a private one, which is the only reason
+`OKF_TOKEN` exists. Access for both should be scoped to the repositories that need them.
+
+Every other workflow needs no secret at all.
+
+## Cloud
+
+The platform runs on GCP, free tier only. The constraint is in `AGENTS.md`; the short version
+is scale-to-zero, request-billed, nothing that bills while idle. A design that needs a paid
+resource is the owner's call, in writing, before any code. When a workflow needs to deploy,
+it uses Workload Identity Federation, never a service account key.
+
