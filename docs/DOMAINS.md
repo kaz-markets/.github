@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-02T06:10:00Z
+timestamp: 2026-10-02T06:25:00Z
 code: []
 ---
 
@@ -48,6 +48,38 @@ gcloud run services update "$SERVICE" \
 
 Current exception: `bracco-app` (the player web app) is public this way for the demo. Treat
 that as a demo posture, not the norm; every other service stays IAP-gated.
+
+## The app pipeline
+
+`kaz-control` carries one deploy action, `.github/actions/cloudrun-deploy`, that does the
+whole job: build the image, push it, deploy, attach the domains, write the DNS records, and
+optionally gate the service with IAP. Each app has a thin caller that names its directory and
+its hostnames:
+
+| Workflow | App | Service | Domains | Gate |
+|---|---|---|---|---|
+| `deploy-app.yml` | `app/` | `bracco-app` | `kaz.markets`, `www.kaz.markets` | public |
+| `deploy-admin.yml` | `admin/` | `kaz-admin` | `admin.kaz.markets` | IAP |
+| `deploy.yml` | `bet105-concept/` | `bet105-skin` | (none yet) | public |
+
+Adding an app is a caller with three values. An author changes code and pushes; the pipeline
+does the rest. DNS is written from the mapping's own `status.resourceRecords`, so the records
+always match what Google issued, and the step is idempotent.
+
+The pipeline needs two inputs: the repository secret `CLOUDFLARE_API_TOKEN` (Zone/DNS Edit)
+and the repository variable `CF_ZONE_ID`.
+
+## Domain verification is per account
+
+A domain mapping can only be created by an account that has the domain verified. `gcloud
+domains verify` verifies it for the *user* who runs it, not for the project, so a mapping
+created from a developer's terminal works while the same call from the CI service account
+fails with "the provided domain does not appear to be verified for the current account".
+
+Practical consequence: **create each new domain mapping once, from a verified account**, then
+let the pipeline maintain it. The pipeline's attach step skips a mapping that already exists
+and only writes DNS for it, so it stays green. Adding a brand new hostname is therefore a
+one-line operator step, not something an app author does.
 
 ## Add a service
 
@@ -181,16 +213,18 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 
 - `kaz.markets` (the apex) -> Cloud Run service `bracco-app`, the player web app from
   `kaz-control/app`. Public for the demo via `--no-invoker-iam-check`, not IAP.
+- `www.kaz.markets` -> `bracco-app`, the same service as the apex.
+- `admin.kaz.markets` -> Cloud Run service `kaz-admin`, the back office from
+  `kaz-control/admin`. IAP gated for `domain:kaz.markets`.
 - `reports.kaz.markets` -> Cloud Run service `reports`, IAP gated for `domain:kaz.markets`.
 - DNS at Cloudflare, in the `Dh@drhamilton.dev's Account` zone, all DNS only:
-  `CNAME reports -> ghs.googlehosted.com`, and at the apex four `A` plus four `AAAA` records
-  pointing at the addresses Google returned for the mapping.
-- Both managed certificates are still `CertificateProvisioned: CertificatePending`. Google
-  issues them asynchronously once the records resolve; this can take from minutes to hours.
-  Nothing else is required on our side.
+  `CNAME www`, `CNAME admin`, `CNAME reports` -> `ghs.googlehosted.com`, and at the apex four
+  `A` plus four `AAAA` records pointing at the addresses Google returned for the mapping.
+- The managed certificates are still provisioning. Google issues them asynchronously once the
+  records resolve; this can take from minutes to hours. Nothing else is required on our side.
 
 ## What this does not cover
 
-- `www.kaz.markets` is deliberately unset, and that is the decision, not an oversight. Map it
-  to the same service as the apex if it is ever wanted; it takes a CNAME, unlike the apex.
-- `admin.kaz.markets` (the back office) is a separate decision, not mapped here.
+- `www.kaz.markets` maps to the player app; a separate marketing site would need its own
+  service and domain.
+- `site/` in `kaz-control` is a local-only portfolio rebuild and must not be deployed.
