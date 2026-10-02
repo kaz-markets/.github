@@ -1,0 +1,17 @@
+[
+  {
+    "name": "keep-recent",
+    "action": { "type": "Keep" },
+    "mostRecentVersions": { "keepCount": 5 }
+  },
+  {
+    "name": "delete-build-artifacts",
+    "action": { "type": "Delete" },
+    "condition": { "tagState": "untagged", "olderThan": "7d" }
+  },
+  {
+    "name": "delete-old",
+    "action": { "type": "Delete" },
+    "condition": { "tagState": "any", "olderThan": "30d" }
+  }
+]
