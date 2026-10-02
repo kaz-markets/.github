@@ -17,6 +17,7 @@ documented yet.
 
 | Doc | Covers | Owner | Code |
 | --- | --- | --- | --- |
+| [DOMAINS.md](DOMAINS.md) | How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it. | dan |  |
 | [HOSTING.md](HOSTING.md) | Where each piece runs, what it costs nothing to run, and what cannot leave GCP. | dan |  |
 | [TASKS.md](TASKS.md) | Where work is tracked, what belongs where, and the rule that keeps notifications from pinging people. | dan |  |
 
