@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-02T06:05:00Z
+timestamp: 2026-10-02T06:07:00Z
 code: []
 ---
 
@@ -184,6 +184,9 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 
 ## What this does not cover
 
-- The apex `kaz.markets` and `www` need A/AAAA records rather than a subdomain CNAME. Add them
-  if the root should serve something; nothing is on it today.
+- The apex `kaz.markets` and `www` are deliberately unset. Nothing serves there, and that is
+  the decision, not an oversight. When the apex does have something to show, map it to a Cloud
+  Run service like any other host: a domain mapping needs an A/AAAA record rather than a
+  subdomain CNAME, and the HTTPS redirect comes with the mapping. Do not add a record at the
+  apex before there is a service behind it.
 - `admin.kaz.markets` (the back office) is a separate decision, not mapped here.
