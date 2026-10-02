@@ -4,7 +4,7 @@ title: "Overnight update, 1-2 October 2026"
 description: "Everything that landed across the KAZ repositories overnight, grouped by layer, for Jacob."
 owner: dan
 tags: [update, hosting, domains, okf, registry]
-timestamp: 2026-10-02T06:02:00Z
+timestamp: 2026-10-02T17:35:00Z
 code: []
 ---
 
@@ -106,17 +106,24 @@ review: [`.github#9`](https://github.com/kaz-markets/.github/pull/9).
 
 ## Open, and what needs a decision
 
-- **`.github#9` is open**: the Artifact Registry decision and cleanup policy needs a read.
 - **The `reports` service has no source repository.** It was built from a staging directory,
   so it runs but cannot be redeployed. A `kaz-markets/reports` repository was the agreed
   direction and is not created yet.
-- **The `reports.kaz.markets` certificate is still issuing.** Google provisions managed
-  certificates asynchronously; DNS is correct, so nothing is blocked on us.
 - **The notification webhook is deliberately not built** (`docs/TASKS.md`). No Google Chat
   space exists yet.
-- **Backend domain issues `kaz-control#49` through `#58` are open** (auth, wallet, wagers,
-  settlement, prediction markets and the rest). They are the migration phases, seeded on the
-  org Project as draft items.
+
+## Resolved since this update (2026-10-02 afternoon)
+
+- **`.github#9` is merged**: the Artifact Registry decision and its cleanup policy are in.
+- **The `reports.kaz.markets` certificate issued.** The mapping answers HTTPS and returns the
+  IAP `302` to Google sign-in, so the managed certificate is live.
+- **Backend domain issues `kaz-control#49` through `#58` are addressed.** Every contract domain
+  has an implementation behind `/api/v1` (auth and session, wallet, ledger, wagers and
+  settlement, payments, bonuses, catalog, prediction markets, the SSE channel, limits and
+  responsible gaming). Four details remain open as issues: the contract decisions (#43), the
+  datastore storing money as numeric USD not cents (#50), `pending` and `balance.updated`
+  (#54), and `POST /kyc/start` (#46). The platform server (`bracco-server`) also deployed
+  green after its boot-time memory fix. See `kaz-control/docs/backend/` and `STATUS.md`.
 
 ## Rules that changed how we work
 
