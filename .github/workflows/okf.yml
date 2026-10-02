@@ -1,9 +1,48 @@
 name: okf
 
-# This repository is a bundle too, so it runs its own check.
+# Reusable. A repository calls it with:
+#
+#   jobs:
+#     okf:
+#       uses: kaz-markets/.github/.github/workflows/okf.yml@main
+#
+# Checks that the bundle has valid frontmatter, that docs/INDEX.md is in parity
+# with the files, and that a diff touching code a doc covers also updates that doc.
+#
+# Do not add an `on: pull_request` caller to this repository at this same path.
+# A workflow cannot call itself, and this repository is a bundle too: its own
+# caller lives in bundle.yml.
+
 on:
-  pull_request:
+  workflow_call:
+    inputs:
+      bundle:
+        description: Bundle directory, relative to the repository root.
+        type: string
+        default: docs
+      index:
+        description: Index file inside the bundle.
+        type: string
+        default: docs/INDEX.md
+      base:
+        description: Ref to diff against for the freshness check. Empty derives it from the event.
+        type: string
+        default: ""
 
 jobs:
   okf:
-    uses: kaz-markets/.github/.github/workflows/okf.yml@main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: kaz-markets/.github/actions/okf-check@main
+        with:
+          bundle: ${{ inputs.bundle }}
+          index: ${{ inputs.index }}
+          base: ${{ inputs.base != '' && inputs.base || github.event.pull_request.base.sha || github.event.before || '' }}

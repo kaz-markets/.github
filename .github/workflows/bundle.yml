@@ -1,0 +1,12 @@
+name: bundle
+
+# This repository is a bundle too, so it runs the same check it hands to the
+# others. This file is the caller and it is deliberately NOT named okf.yml:
+# a workflow cannot call itself, and the reusable it calls lives at
+# .github/workflows/okf.yml in this repository.
+on:
+  pull_request:
+
+jobs:
+  okf:
+    uses: kaz-markets/.github/.github/workflows/okf.yml@main
