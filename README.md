@@ -94,8 +94,15 @@ level once the GCP project exists, and read per repository with `vars.NAME`.
 
 ## Cloud
 
-The platform runs on GCP, free tier only. The constraint is in `AGENTS.md`; the short version
-is scale-to-zero, request-billed, nothing that bills while idle. A design that needs a paid
-resource is the owner's call, in writing, before any code. When a workflow needs to deploy,
-it uses Workload Identity Federation, never a service account key.
+The platform runs on GCP, **Always Free SKUs only**. That is a narrower thing than the free
+tier: the $300 / 90-day trial credit funds any SKU and leaves a bill behind, so it does not
+count. The constraint is in `AGENTS.md`; the short version is scale-to-zero, request-billed,
+nothing that bills while idle, and exactly one always-on exception, the Always Free
+`e2-micro` for the socket.
+
+When a workflow needs to deploy, it authenticates with Workload Identity Federation, never a
+service account key.
+
+Builds and images do not need GCP: GitHub Actions is free, and GHCR is free for public images,
+which keeps Artifact Registry and Cloud Build out of the picture.
 
