@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-02T06:25:00Z
+timestamp: 2026-10-02T06:32:00Z
 code: []
 ---
 
@@ -46,8 +46,9 @@ gcloud run services update "$SERVICE" \
   --project kaz-markets-prod --region us-east4 --no-invoker-iam-check
 ```
 
-Current exception: `bracco-app` (the player web app) is public this way for the demo. Treat
-that as a demo posture, not the norm; every other service stays IAP-gated.
+Current exceptions: `bracco-app` (the player web app) and `bet105-skin` (the bet105 concept
+book) are public this way for the demo. Treat that as a demo posture, not the norm; every
+other service stays IAP-gated.
 
 ## The app pipeline
 
@@ -60,11 +61,13 @@ its hostnames:
 |---|---|---|---|---|
 | `deploy-app.yml` | `app/` | `bracco-app` | `kaz.markets`, `www.kaz.markets` | public |
 | `deploy-admin.yml` | `admin/` | `kaz-admin` | `admin.kaz.markets` | IAP |
-| `deploy.yml` | `bet105-concept/` | `bet105-skin` | (none yet) | public |
+| `deploy.yml` | `bet105-concept/` | `bet105-skin` | `concept.kaz.markets` | public |
 
 Adding an app is a caller with three values. An author changes code and pushes; the pipeline
 does the rest. DNS is written from the mapping's own `status.resourceRecords`, so the records
-always match what Google issued, and the step is idempotent.
+always match what Google issued, and the step is idempotent. The action takes optional
+`context`, `env-vars` and `secrets` inputs too, for an app that builds from its own directory
+or needs environment variables and Secret Manager values on the service.
 
 The pipeline needs two inputs: the repository secret `CLOUDFLARE_API_TOKEN` (Zone/DNS Edit)
 and the repository variable `CF_ZONE_ID`.
@@ -217,9 +220,12 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 - `admin.kaz.markets` -> Cloud Run service `kaz-admin`, the back office from
   `kaz-control/admin`. IAP gated for `domain:kaz.markets`.
 - `reports.kaz.markets` -> Cloud Run service `reports`, IAP gated for `domain:kaz.markets`.
+- `concept.kaz.markets` -> Cloud Run service `bet105-skin`, the bet105 concept book from
+  `kaz-control/bet105-concept`. Public for the demo via `--no-invoker-iam-check`, not IAP.
 - DNS at Cloudflare, in the `Dh@drhamilton.dev's Account` zone, all DNS only:
-  `CNAME www`, `CNAME admin`, `CNAME reports` -> `ghs.googlehosted.com`, and at the apex four
-  `A` plus four `AAAA` records pointing at the addresses Google returned for the mapping.
+  `CNAME www`, `CNAME admin`, `CNAME reports`, `CNAME concept` -> `ghs.googlehosted.com`, and
+  at the apex four `A` plus four `AAAA` records pointing at the addresses Google returned for
+  the mapping.
 - The managed certificates are still provisioning. Google issues them asynchronously once the
   records resolve; this can take from minutes to hours. Nothing else is required on our side.
 
