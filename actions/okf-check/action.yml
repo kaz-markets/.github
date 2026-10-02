@@ -1,0 +1,33 @@
+name: OKF check
+description: Validate the knowledge bundle frontmatter and the index parity.
+
+inputs:
+  bundle:
+    description: Bundle directory, relative to the repository root.
+    required: false
+    default: docs
+  index:
+    description: Index file inside the bundle.
+    required: false
+    default: docs/INDEX.md
+  base:
+    description: Ref to diff against for the doc-freshness check. Empty skips it.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Check the bundle
+      shell: bash
+      env:
+        BUNDLE: ${{ inputs.bundle }}
+        INDEX: ${{ inputs.index }}
+        BASE: ${{ inputs.base }}
+      run: |
+        set -euo pipefail
+        args=(--check --bundle "$BUNDLE" --index "$INDEX")
+        if [ -n "$BASE" ]; then
+          args+=(--base "$BASE")
+        fi
+        node "${{ github.action_path }}/../../scripts/okf.mjs" "${args[@]}"
