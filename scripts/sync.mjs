@@ -133,8 +133,9 @@ for (const repo of selected) {
   if (writeIfChanged(join(dir, ".github/CODEOWNERS"), `* @${repo.owner}\n`)) {
     touched.push(".github/CODEOWNERS");
   }
-  if (repo.bootstrap && !existsSync(join(dir, "docs/INDEX.md"))) {
-    if (writeIfChanged(join(dir, "docs/INDEX.md"), starterIndex())) touched.push("docs/INDEX.md");
+  const indexPath = repo.index ?? "docs/INDEX.md";
+  if (repo.bootstrap && !existsSync(join(dir, indexPath))) {
+    if (writeIfChanged(join(dir, indexPath), starterIndex())) touched.push(indexPath);
   }
 
   if (touched.length === 0) {
