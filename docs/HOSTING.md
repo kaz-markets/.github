@@ -25,6 +25,7 @@ platform normally pays a cloud provider for is free on GitHub, and only two thin
 | Any cron | Actions `schedule` | Free, but best-effort: runs can be delayed, and a schedule is disabled after 60 days of repository inactivity. Maintenance only, never anything time-critical |
 | Batch work | Actions runners | 2 vCPU, 7GB, 6 hour cap. Simulators, scrapers, migrations, smoke tests |
 | Build output, reports | Releases, or Actions artifacts | Artifacts: 500MB, 90 days. Releases: 100MB per file |
+| Captures and galleries | Cloudflare R2, `assets.kaz.markets` | 10 GB free, no egress charge. Screenshots and QA sweeps are never committed; see `RUNNING-ON-GCP.md` |
 | Static hosting | GitHub Pages | **Public repositories only** on the Free plan. Private repositories need Pro |
 | Tickets, roadmap | Issues, Projects | Free |
 | The socket | GCP, Always Free `e2-micro` | One per month, `us-central1` / `us-west1` / `us-east1`, 30GB disk, 1GB egress |

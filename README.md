@@ -15,6 +15,7 @@ repository owns the rules and the checks that every bundle is held to.
 | `scripts/okf.mjs` | Check and generate a knowledge bundle |
 | `scripts/frontend-guard.sh` | Flag a diff that changes the front end |
 | `scripts/sync.mjs` | Developer machine tool: copies the rules and the caller workflow into a repository |
+| `scripts/migrate-captures.mjs` | Upload capture directories to the CDN (Cloudflare R2); captures are not committed |
 | `sync/repos.json` | The manifest `sync.mjs` reads: which repositories, whose they are, which paths are front end |
 | `actions/okf-check/` | Composite action wrapping `okf.mjs` |
 | `actions/frontend-guard/` | Composite action wrapping `frontend-guard.sh` |
