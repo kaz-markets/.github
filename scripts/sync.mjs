@@ -28,6 +28,8 @@ if (!token) {
 const manifest = JSON.parse(readFileSync("sync/repos.json", "utf8"));
 const agentRules = readFileSync("AGENTS.md", "utf8");
 const okfScript = readFileSync("scripts/okf.mjs", "utf8");
+// The Cloudflare MCP servers, so every repository gets the same agent tooling.
+const cursorMcp = readFileSync(".cursor/mcp.json", "utf8");
 
 const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
 const branch = `okf/sync-${stamp}`;
@@ -127,6 +129,7 @@ for (const repo of selected) {
   const touched = [];
   if (writeIfChanged(join(dir, "AGENTS.md"), agentRules)) touched.push("AGENTS.md");
   if (writeIfChanged(join(dir, "scripts/okf.mjs"), okfScript)) touched.push("scripts/okf.mjs");
+  if (writeIfChanged(join(dir, ".cursor/mcp.json"), cursorMcp)) touched.push(".cursor/mcp.json");
   if (writeIfChanged(join(dir, ".github/workflows/okf.yml"), callerWorkflow(repo))) {
     touched.push(".github/workflows/okf.yml");
   }
