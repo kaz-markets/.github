@@ -19,7 +19,6 @@
       "name": "kaz-msg",
       "owner": "danhamilt",
       "frontend": false,
-      "schedule": false,
       "bootstrap": true
     },
     {
