@@ -2,7 +2,8 @@
 
 These rules are the organization default. Every repository in `kaz-markets` carries a copy.
 The canonical text lives here. A copy ships in each repository, because an agent reads the
-copy that sits beside the code.
+copy that sits beside the code. Do not edit a copy: change this file, then run
+`scripts/sync.mjs`. The `agents guard` check fails a repository whose copy has drifted.
 
 ## The knowledge bundle comes first
 
@@ -170,5 +171,7 @@ in `docs/TASKS.md`.
 
 - `kaz-markets/.github/.github/workflows/okf.yml` - frontmatter, index parity, doc freshness.
 - `kaz-markets/.github/.github/workflows/frontend-guard.yml` - flags a front-end diff.
+- `kaz-markets/.github/.github/workflows/agents-guard.yml` - fails when a repository's copy of
+  `AGENTS.md` has drifted from the canonical file here.
 - `scripts/okf.mjs` in this repository is the one implementation. Each repository carries a
   copy, so `node scripts/okf.mjs --write` works locally. Edit it here, never there.

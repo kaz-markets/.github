@@ -10,8 +10,9 @@
     {
       "name": "prediction-markets-report",
       "owner": "danhamilt",
-      "protected": "index.html",
-      "allowAuthors": "danhamilt",
+      "bundle": "knowledge",
+      "index": "knowledge/INDEX.md",
+      "frontend": false,
       "bootstrap": true
     }
   ]
