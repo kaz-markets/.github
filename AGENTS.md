@@ -29,6 +29,26 @@ this and fails the PR when it is skipped.
 them unless the owner asks for it in that task. Platform, backend, service and `docs/` work
 is the work. When a front-end change looks required, stop and say so instead of making it.
 
+## The base app is the product, branding is applied on top
+
+We build one base application and put branding on it, not one app per brand. The base carries
+every integration - the routing services, the front-end API packages, the platform - wired and
+working, so it is the product. A brand is a name, a logo, colours, copy and a domain applied
+to that base at the end. The white label is built in, not bolted on.
+
+- A brand never lives in a code repository. No brand name, logo, colour, copy or domain in
+  source; those live in configuration and assets, applied at deploy or runtime.
+- A brand never forks the code. Standing up a brand is wiring and configuration, not a branch.
+  When a brand seems to need a code change, the base is missing a seam: add the seam to the
+  base, so every brand gets it.
+- The base and a brand are developed apart, so two developers, two brands, or a brand and the
+  base never affect each other.
+- Every integration sits behind an interface with a local mock (see Stack), so a new brand or
+  a new venue is configuration rather than a rewrite.
+
+This is the lesson from the brands already shipped: the branding belonged on top of a base,
+not inside the application.
+
 ## Platform constraints
 
 Hard limits, not preferences. If a task cannot be done inside them, stop and say so. Do not
