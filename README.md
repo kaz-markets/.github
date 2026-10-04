@@ -36,8 +36,6 @@ name: okf
 
 on:
   pull_request:
-  schedule:
-    - cron: "0 6 * * *"
 
 jobs:
   okf:

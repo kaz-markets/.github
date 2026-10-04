@@ -12,7 +12,7 @@ name: agents guard
 #
 # This file is itself the canonical AGENTS.md, so it never calls this check.
 # The fetch is over HTTPS from a public repository, so the check needs no token
-# and no secret, and it runs on a schedule as well as on a pull request.
+# and no secret. It runs on a pull request, which is when a copy can drift.
 
 on:
   workflow_call:

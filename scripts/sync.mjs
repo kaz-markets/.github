@@ -41,9 +41,7 @@ const branch = `okf/sync-${stamp}`;
 //   bundle: "knowledge"  a bundle directory other than docs/
 // The agents job is always present; it is the project-wide rule check.
 function callerWorkflow(repo) {
-  const lines = ["name: okf", "", "on:", "  pull_request:"];
-  if (repo.schedule !== false) lines.push("  schedule:", '    - cron: "0 6 * * *"');
-  lines.push("", "jobs:");
+  const lines = ["name: okf", "", "on:", "  pull_request:", "", "jobs:"];
 
   if (repo.bundle !== false) {
     lines.push("  okf:", "    uses: kaz-markets/.github/.github/workflows/okf.yml@main");
