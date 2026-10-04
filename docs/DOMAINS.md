@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-02T06:32:00Z
+timestamp: 2026-10-04T18:40:00Z
 code: []
 ---
 
@@ -222,6 +222,10 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 - `reports.kaz.markets` -> Cloud Run service `reports`, IAP gated for `domain:kaz.markets`.
 - `concept.kaz.markets` -> Cloud Run service `bet105-skin`, the bet105 concept book from
   `kaz-control/bet105-concept`. Public for the demo via `--no-invoker-iam-check`, not IAP.
+- `msg.kaz.markets` -> Cloud Run service `kaz-msg`, the update relay from
+  `kaz-markets/kaz-msg`. The service is live on its `run.app` URL, public via
+  `--no-invoker-iam-check`; every write is gated by a bearer token. The domain mapping is
+  **not created yet** (it needs a verified account, see below); add the CNAME when it is.
 - DNS at Cloudflare, in the `Dh@drhamilton.dev's Account` zone, all DNS only:
   `CNAME www`, `CNAME admin`, `CNAME reports`, `CNAME concept` -> `ghs.googlehosted.com`, and
   at the apex four `A` plus four `AAAA` records pointing at the addresses Google returned for

@@ -16,6 +16,12 @@
       "bootstrap": true
     },
     {
+      "name": "kaz-msg",
+      "owner": "danhamilt",
+      "frontend": false,
+      "bootstrap": true
+    },
+    {
       "name": "kaz-control",
       "owner": "danhamilt",
       "protected": "app/ admin/ mobile/ site/ bet105-concept/",
