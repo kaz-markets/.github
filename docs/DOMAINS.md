@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-04T18:40:00Z
+timestamp: 2026-10-04T20:55:00Z
 code: []
 ---
 
@@ -223,14 +223,17 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 - `concept.kaz.markets` -> Cloud Run service `bet105-skin`, the bet105 concept book from
   `kaz-control/bet105-concept`. Public for the demo via `--no-invoker-iam-check`, not IAP.
 - `msg.kaz.markets` -> Cloud Run service `kaz-msg`, the update relay from
-  `kaz-markets/kaz-msg`. The service is live on its `run.app` URL, public via
-  `--no-invoker-iam-check`; every write is gated by a bearer token. The domain mapping is
-  **not created yet** (it needs a verified account, see below); add the CNAME when it is.
+  `kaz-markets/kaz-msg`. Public via `--no-invoker-iam-check`; every write is gated by a
+  bearer token. Live, certificate issued 2026-10-04.
+- `bb.kaz.markets` -> Cloudflare Tunnel `kaz-bot`
+  (`542fdce1-520d-49d0-90d9-06965a008ad4`) to BlueBubbles on the bot Mac. This is a tunnel,
+  not a Cloud Run mapping, so the Mac dials out and needs no inbound firewall. See
+  `kaz-msg/docs/BLUEBUBBLES.md`.
 - DNS at Cloudflare, in the `Dh@drhamilton.dev's Account` zone, all DNS only:
-  `CNAME www`, `CNAME admin`, `CNAME reports`, `CNAME concept` -> `ghs.googlehosted.com`, and
-  at the apex four `A` plus four `AAAA` records pointing at the addresses Google returned for
-  the mapping.
-- The managed certificates are still provisioning. Google issues them asynchronously once the
+  `CNAME www`, `CNAME admin`, `CNAME reports`, `CNAME concept`, `CNAME msg` ->
+  `ghs.googlehosted.com`, `CNAME bb` -> the tunnel, and at the apex four `A` plus four `AAAA`
+  records pointing at the addresses Google returned for the mapping.
+- For the Cloud Run mappings, Google issues the managed certificates asynchronously once the
   records resolve; this can take from minutes to hours. Nothing else is required on our side.
 
 ## What this does not cover
