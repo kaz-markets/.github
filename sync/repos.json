@@ -10,8 +10,9 @@
     {
       "name": "prediction-markets-report",
       "owner": "danhamilt",
-      "protected": "index.html",
-      "allowAuthors": "danhamilt",
+      "bundle": "knowledge",
+      "index": "knowledge/INDEX.md",
+      "frontend": false,
       "bootstrap": true
     },
     {
@@ -19,6 +20,19 @@
       "owner": "danhamilt",
       "frontend": false,
       "bootstrap": true
+    },
+    {
+      "name": "kaz-control",
+      "owner": "danhamilt",
+      "protected": "app/ admin/ mobile/ site/ bet105-concept/",
+      "allowAuthors": "jacobq61,danhamilt",
+      "mode": "fail"
+    },
+    {
+      "name": "kaz-routing-service",
+      "owner": "danhamilt",
+      "bundle": false,
+      "frontend": false
     }
   ]
 }

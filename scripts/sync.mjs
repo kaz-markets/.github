@@ -28,26 +28,45 @@ if (!token) {
 const manifest = JSON.parse(readFileSync("sync/repos.json", "utf8"));
 const agentRules = readFileSync("AGENTS.md", "utf8");
 const okfScript = readFileSync("scripts/okf.mjs", "utf8");
+// The Cloudflare MCP servers, so every repository gets the same agent tooling.
+const cursorMcp = readFileSync(".cursor/mcp.json", "utf8");
 
 const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
 const branch = `okf/sync-${stamp}`;
 
+// The caller a repository keeps at .github/workflows/okf.yml. Which jobs it
+// carries is per repository, so a bundle-less repository gets only the guard:
+//   bundle: false     no docs bundle yet, skip the okf job
+//   frontend: false   the repository has no front end to protect
+//   bundle: "knowledge"  a bundle directory other than docs/
+// The agents job is always present; it is the project-wide rule check.
 function callerWorkflow(repo) {
-  return `name: okf
+  const lines = ["name: okf", "", "on:", "  pull_request:"];
+  if (repo.schedule !== false) lines.push("  schedule:", '    - cron: "0 6 * * *"');
+  lines.push("", "jobs:");
 
-on:
-  pull_request:
+  if (repo.bundle !== false) {
+    lines.push("  okf:", "    uses: kaz-markets/.github/.github/workflows/okf.yml@main");
+    if (repo.bundle && repo.bundle !== "docs") {
+      lines.push("    with:", `      bundle: "${repo.bundle}"`, `      index: "${repo.index ?? "docs/INDEX.md"}"`);
+    }
+    lines.push("");
+  }
 
-jobs:
-  okf:
-    uses: kaz-markets/.github/.github/workflows/okf.yml@main
+  if (repo.frontend !== false) {
+    lines.push(
+      "  frontend:",
+      "    uses: kaz-markets/.github/.github/workflows/frontend-guard.yml@main",
+      "    with:",
+      `      protected: "${repo.protected ?? ""}"`,
+      `      allow-authors: "${repo.allowAuthors ?? ""}"`,
+      `      mode: "${repo.mode ?? "warn"}"`,
+      "",
+    );
+  }
 
-  frontend:
-    uses: kaz-markets/.github/.github/workflows/frontend-guard.yml@main
-    with:
-      protected: "${repo.protected ?? ""}"
-      allow-authors: "${repo.allowAuthors ?? ""}"
-`;
+  lines.push("  agents:", "    uses: kaz-markets/.github/.github/workflows/agents-guard.yml@main", "");
+  return lines.join("\n");
 }
 
 function starterIndex() {
@@ -110,14 +129,16 @@ for (const repo of selected) {
   const touched = [];
   if (writeIfChanged(join(dir, "AGENTS.md"), agentRules)) touched.push("AGENTS.md");
   if (writeIfChanged(join(dir, "scripts/okf.mjs"), okfScript)) touched.push("scripts/okf.mjs");
+  if (writeIfChanged(join(dir, ".cursor/mcp.json"), cursorMcp)) touched.push(".cursor/mcp.json");
   if (writeIfChanged(join(dir, ".github/workflows/okf.yml"), callerWorkflow(repo))) {
     touched.push(".github/workflows/okf.yml");
   }
   if (writeIfChanged(join(dir, ".github/CODEOWNERS"), `* @${repo.owner}\n`)) {
     touched.push(".github/CODEOWNERS");
   }
-  if (repo.bootstrap && !existsSync(join(dir, "docs/INDEX.md"))) {
-    if (writeIfChanged(join(dir, "docs/INDEX.md"), starterIndex())) touched.push("docs/INDEX.md");
+  const indexPath = repo.index ?? "docs/INDEX.md";
+  if (repo.bootstrap && !existsSync(join(dir, indexPath))) {
+    if (writeIfChanged(join(dir, indexPath), starterIndex())) touched.push(indexPath);
   }
 
   if (touched.length === 0) {

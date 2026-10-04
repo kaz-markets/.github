@@ -1,0 +1,34 @@
+name: agents guard
+
+# Reusable. A repository calls it with:
+#
+#   jobs:
+#     agents:
+#       uses: kaz-markets/.github/.github/workflows/agents-guard.yml@main
+#
+# Fails when a repository's AGENTS.md has drifted from the canonical copy in
+# kaz-markets/.github. AGENTS.md is synced, never edited in a repository: change
+# the canonical file and run scripts/sync.mjs.
+#
+# This file is itself the canonical AGENTS.md, so it never calls this check.
+# The fetch is over HTTPS from a public repository, so the check needs no token
+# and no secret, and it runs on a schedule as well as on a pull request.
+
+on:
+  workflow_call:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AGENTS.md matches the canonical copy
+        run: |
+          set -euo pipefail
+          curl -fsSL -o "$RUNNER_TEMP/AGENTS.md" \
+            "https://raw.githubusercontent.com/kaz-markets/.github/main/AGENTS.md"
+          if ! diff -u "$RUNNER_TEMP/AGENTS.md" AGENTS.md; then
+            echo "::error file=AGENTS.md::AGENTS.md has drifted from kaz-markets/.github/AGENTS.md. It is synced, not edited here. Change the canonical file and run scripts/sync.mjs."
+            exit 1
+          fi

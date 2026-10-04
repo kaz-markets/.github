@@ -15,13 +15,16 @@ repository owns the rules and the checks that every bundle is held to.
 | `scripts/okf.mjs` | Check and generate a knowledge bundle |
 | `scripts/frontend-guard.sh` | Flag a diff that changes the front end |
 | `scripts/sync.mjs` | Developer machine tool: copies the rules and the caller workflow into a repository |
+| `scripts/migrate-captures.mjs` | Upload capture directories to the CDN (Cloudflare R2); captures are not committed |
+| `.cursor/mcp.json` | The Cloudflare MCP servers; `sync.mjs` copies it into every repository, so all users get them |
 | `sync/repos.json` | The manifest `sync.mjs` reads: which repositories, whose they are, which paths are front end |
 | `actions/okf-check/` | Composite action wrapping `okf.mjs` |
 | `actions/frontend-guard/` | Composite action wrapping `frontend-guard.sh` |
 | `.github/workflows/okf.yml` | Reusable: frontmatter, index parity, doc freshness |
 | `.github/workflows/frontend-guard.yml` | Reusable: flags a front-end diff |
+| `.github/workflows/agents-guard.yml` | Reusable: fails when a repository's `AGENTS.md` drifts from the canonical copy |
 
-There are only two workflows here, and neither needs a secret. Anything that would need one
+There are only three workflows here, and none needs a secret. Anything that would need one
 does not belong in this repository.
 
 ## Adopting it in a repository
@@ -33,6 +36,8 @@ name: okf
 
 on:
   pull_request:
+  schedule:
+    - cron: "0 6 * * *"
 
 jobs:
   okf:
@@ -40,11 +45,14 @@ jobs:
 
   frontend:
     uses: kaz-markets/.github/.github/workflows/frontend-guard.yml@main
+
+  agents:
+    uses: kaz-markets/.github/.github/workflows/agents-guard.yml@main
 ```
 
-To do it by hand, copy four files: `AGENTS.md`, `scripts/okf.mjs`,
-`.github/workflows/okf.yml` (the caller above, with the repository's protected paths) and
-`.github/CODEOWNERS`. `scripts/sync.mjs` is the same thing automated for a developer machine:
+To do it by hand, copy three files: `AGENTS.md`, `scripts/okf.mjs` and `.github/CODEOWNERS`,
+then add the caller above at `.github/workflows/okf.yml`. `scripts/sync.mjs` is the same thing
+automated for a developer machine:
 
 ```bash
 GH_TOKEN=<token> node scripts/sync.mjs --dry-run
@@ -65,9 +73,10 @@ so onboarding a repository is a deliberate act rather than a scheduled job.
 
 ## Secrets
 
-**None.** Nothing in this repository needs a secret. Both workflows run on the `GITHUB_TOKEN`
-that GitHub issues to every workflow run, scoped to the repository the run is in. That covers
-everything a repository does to itself, which is all either check does.
+**None.** Nothing in this repository needs a secret. The workflows run on the `GITHUB_TOKEN`
+that GitHub issues to every workflow run, scoped to the repository the run is in, or (the
+agents guard) a plain HTTPS fetch of the public canonical `AGENTS.md`. That covers everything
+a repository does to itself, which is all any check does.
 
 The only automation that cannot use `GITHUB_TOKEN` is one that acts on *another* repository,
 because that token cannot push to it or read it when it is private. Both such workflows were
