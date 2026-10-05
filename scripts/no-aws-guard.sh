@@ -6,6 +6,10 @@
 #
 # This scans the tracked tree, not a diff, so drift is caught even when a change
 # slips past review. Run it from the repository root. Exit 1 on any hit.
+#
+# A repository may list exceptions in a `.no-aws-allow` file at its root: one
+# extended-regex path per line, blank lines and `#` comments ignored. Use it only
+# for third-party data that happens to carry an AWS URL, never for our own usage.
 
 set -euo pipefail
 
@@ -13,13 +17,20 @@ set -euo pipefail
 # and the `AWS_` credential names, not prose that happens to say "AWS".
 pattern='boto3|@aws-sdk/|aws-sdk/|"aws-sdk"|awscli|aws-cli|AWS_(ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN|SECURITY_TOKEN|PROFILE|REGION|DEFAULT_REGION)|amazonaws\.com|\.aws/credentials|(^|[[:space:]])aws[[:space:]]'
 
-# Files that legitimately name the ban, or are the machinery that enforces it.
-exclude='^(AGENTS\.md|[^/]*\.md|.*\.mdx|scripts/no-aws-guard\.sh|actions/no-aws-guard/.*|\.github/workflows/no-aws-guard\.yml|\.cursor/hooks\.json|\.cursor/hooks/no-aws\.sh)$'
+# Files that legitimately name the ban, are the machinery that enforces it, or are
+# generated output (not source, and not where a dependency is declared).
+exclude='^(AGENTS\.md|[^/]*\.md|.*\.mdx|scripts/no-aws-guard\.sh|actions/no-aws-guard/.*|\.github/workflows/no-aws-guard\.yml|\.cursor/hooks\.json|\.cursor/hooks/no-aws\.sh|(.*/)?(build|dist|coverage|node_modules|vendor)/.*)$'
+
+allow_re=""
+if [ -f .no-aws-allow ]; then
+  allow_re="$(grep -vE '^[[:space:]]*(#|$)' .no-aws-allow | paste -sd'|' - || true)"
+fi
 
 hits=0
 while IFS= read -r f; do
   [ -f "$f" ] || continue
   printf '%s\n' "$f" | grep -Eq "$exclude" && continue
+  if [ -n "$allow_re" ] && printf '%s\n' "$f" | grep -Eq "^($allow_re)$"; then continue; fi
   if grep -InE "$pattern" "$f" >/dev/null 2>&1; then
     grep -InE "$pattern" "$f" | sed "s|^|  $f:|"
     hits=$((hits + 1))
