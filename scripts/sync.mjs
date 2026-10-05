@@ -7,7 +7,9 @@
 //
 // Run from a checkout of kaz-markets/.github. The manifest is sync/repos.json.
 // Each repository gets a copy of AGENTS.md, scripts/okf.mjs, a caller workflow,
-// a CODEOWNERS, and (when bootstrap is set) an empty docs/INDEX.md to start.
+// a CODEOWNERS, the shared quality configuration (biome.json, ruff.toml,
+// .dependency-cruiser.cjs), and (when bootstrap is set) an empty docs/INDEX.md
+// to start.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -33,6 +35,11 @@ const cursorMcp = readFileSync(".cursor/mcp.json", "utf8");
 // The shell hook that blocks AWS, and its config, so every repository blocks it too.
 const cursorHooks = readFileSync(".cursor/hooks.json", "utf8");
 const noAwsHook = readFileSync(".cursor/hooks/no-aws.sh", "utf8");
+// The shared quality configuration: one linter and formatter for TypeScript,
+// one for Python, and the structural rules the architecture check reads.
+const biomeConfig = readFileSync("biome.json", "utf8");
+const ruffConfig = readFileSync("ruff.toml", "utf8");
+const depCruiseConfig = readFileSync(".dependency-cruiser.cjs", "utf8");
 
 const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
 const branch = `okf/sync-${stamp}`;
@@ -134,6 +141,11 @@ for (const repo of selected) {
   if (writeIfChanged(join(dir, ".cursor/mcp.json"), cursorMcp)) touched.push(".cursor/mcp.json");
   if (writeIfChanged(join(dir, ".cursor/hooks.json"), cursorHooks)) touched.push(".cursor/hooks.json");
   if (writeIfChanged(join(dir, ".cursor/hooks/no-aws.sh"), noAwsHook)) touched.push(".cursor/hooks/no-aws.sh");
+  if (writeIfChanged(join(dir, "biome.json"), biomeConfig)) touched.push("biome.json");
+  if (writeIfChanged(join(dir, "ruff.toml"), ruffConfig)) touched.push("ruff.toml");
+  if (writeIfChanged(join(dir, ".dependency-cruiser.cjs"), depCruiseConfig)) {
+    touched.push(".dependency-cruiser.cjs");
+  }
   if (writeIfChanged(join(dir, ".github/workflows/okf.yml"), callerWorkflow(repo))) {
     touched.push(".github/workflows/okf.yml");
   }

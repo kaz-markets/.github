@@ -1,0 +1,31 @@
+# Ruff configuration for every KAZ Python package.
+#
+# Synced from kaz-markets/.github. Do not edit a copy: change this file and run
+# scripts/sync.mjs. The format is checked, not just the lint: `ruff format
+# --check` runs in CI, and `ruff format` is the formatter of record.
+
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # import sorting
+  "UP",  # pyupgrade
+  "B",   # flake8-bugbear
+  "C4",  # comprehensions
+  "SIM", # simplify
+  "RUF", # ruff-specific
+]
+ignore = [
+  "E501", # line length is the formatter's job
+]
+
+[lint.per-file-ignores]
+"tests/**" = ["B011"] # assert False is a deliberate failure in a test
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

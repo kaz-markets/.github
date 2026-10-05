@@ -1,0 +1,72 @@
+name: architecture
+
+# Reusable. A repository calls it with:
+#
+#   jobs:
+#     arch:
+#       uses: kaz-markets/.github/.github/workflows/arch.yml@main
+#       with:
+#         working-directory: server
+#         target: src
+#
+# Turns the structural rules in AGENTS.md into a check. dependency-cruiser
+# enforces them and fails the job; knip reports dead files, unused exports and
+# unused dependencies and does not fail the job yet, because that report is
+# noisy on a tree that has never been pruned.
+#
+# The rules are the synced .dependency-cruiser.cjs at the repository root.
+# dependency-cruiser reads it by absolute path, so `working-directory` can be a
+# workspace below the root.
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node version to run on.
+        type: string
+        default: "22"
+      working-directory:
+        description: Workspace to analyse, relative to the repository root.
+        type: string
+        default: "."
+      target:
+        description: Source directory to cruise, relative to the workspace.
+        type: string
+        default: "src"
+
+jobs:
+  arch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Install
+        working-directory: ${{ inputs.working-directory }}
+        run: npm ci --no-audit --no-fund
+
+      # dependency-cruiser parses TypeScript through the project's own compiler,
+      # so it has to sit beside it in node_modules. `npx dependency-cruiser`
+      # fetches it into an isolated tree where that compiler is not visible, and
+      # it then cruises zero modules and passes vacuously. It is installed
+      # --no-save and --no-package-lock, so the repository gains no dependency
+      # and its lockfile does not change.
+      - name: dependency-cruiser
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock dependency-cruiser@18.5.0 --no-audit --no-fund
+          npx --no-install depcruise \
+            --config "$GITHUB_WORKSPACE/.dependency-cruiser.cjs" \
+            --output-type err-long \
+            ${{ inputs.target }}
+
+      - name: knip (advisory)
+        continue-on-error: true
+        working-directory: ${{ inputs.working-directory }}
+        run: npx -y knip@6.39.0
