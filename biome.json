@@ -9,14 +9,14 @@
   "files": {
     "includes": [
       "**",
-      "!**/node_modules/**",
-      "!**/dist/**",
-      "!**/build/**",
-      "!**/coverage/**",
-      "!**/.next/**",
-      "!**/.expo/**",
-      "!**/.venv/**",
-      "!**/vendor/**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/coverage",
+      "!**/.next",
+      "!**/.expo",
+      "!**/.venv",
+      "!**/vendor",
       "!**/*.min.js"
     ]
   },
@@ -29,7 +29,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "preset": "recommended"
     }
   },
   "javascript": {

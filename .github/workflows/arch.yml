@@ -33,6 +33,10 @@ on:
         description: Source directory to cruise, relative to the workspace.
         type: string
         default: "src"
+      install-flags:
+        description: Extra flags for npm. " --legacy-peer-deps" for a lockfile that needs it.
+        type: string
+        default: ""
 
 jobs:
   arch:
@@ -48,19 +52,21 @@ jobs:
 
       - name: Install
         working-directory: ${{ inputs.working-directory }}
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund ${{ inputs.install-flags }}
 
       # dependency-cruiser parses TypeScript through the project's own compiler,
       # so it has to sit beside it in node_modules. `npx dependency-cruiser`
       # fetches it into an isolated tree where that compiler is not visible, and
       # it then cruises zero modules and passes vacuously. It is installed
       # --no-save and --no-package-lock, so the repository gains no dependency
-      # and its lockfile does not change.
+      # and its lockfile does not change. It takes the same install flags as the
+      # project, because a lockfile that needs --legacy-peer-deps needs it here
+      # too (npm fails with "Cannot read properties of null" otherwise).
       - name: dependency-cruiser
         working-directory: ${{ inputs.working-directory }}
         run: |
           set -euo pipefail
-          npm install --no-save --no-package-lock dependency-cruiser@18.5.0 --no-audit --no-fund
+          npm install --no-save --no-package-lock dependency-cruiser@18.5.0 --no-audit --no-fund ${{ inputs.install-flags }}
           npx --no-install depcruise \
             --config "$GITHUB_WORKSPACE/.dependency-cruiser.cjs" \
             --output-type err-long \
