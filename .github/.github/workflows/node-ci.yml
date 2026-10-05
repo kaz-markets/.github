@@ -36,6 +36,10 @@ on:
         description: npm script for the test run. Empty skips the step.
         type: string
         default: test
+      install-command:
+        description: Install command. Override when a lockfile needs an extra flag.
+        type: string
+        default: "npm ci --no-audit --no-fund"
 
 jobs:
   ci:
@@ -51,7 +55,7 @@ jobs:
 
       - name: Install
         working-directory: ${{ inputs.working-directory }}
-        run: npm ci --no-audit --no-fund
+        run: ${{ inputs.install-command }}
 
       - name: Type check
         if: ${{ inputs.typecheck-script != '' }}

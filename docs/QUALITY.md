@@ -36,7 +36,8 @@ jobs:
 
 `node-ci.yml` skips a step whose script name is set to `""`, so the same workflow fits a
 service with a suite, a package with only a type check, and a front end with neither.
-`npm ci` is the only install path, so a workspace without a lockfile cannot use it.
+`npm ci` is the only install path by default; a workspace whose lockfile needs an extra flag
+(for example `--legacy-peer-deps`) passes `install-command` instead.
 
 ## The standard: one tool per language
 
