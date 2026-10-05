@@ -88,6 +88,20 @@ project. Treat it as absent.
 - Existing TypeScript services are not rewritten to prove the rule. New backend work is
   Python unless the owner says otherwise for that repository.
 
+### The stack is GCP and Cloudflare. No AWS.
+
+AWS is not a KAZ vendor and never becomes one. Do not add an AWS service, SDK, CLI, package
+or credential to any repository, and do not read from or write to an AWS account.
+
+- Do not install or depend on the AWS CLI, the AWS SDKs, `boto3`, `aws-sdk`, or anything else
+  branded AWS.
+- Do not use an AWS credential, profile (`~/.aws`), or role, for KAZ or for anything a KAZ
+  task touches. If a machine happens to have AWS configuration, it is not this project's.
+- Cloudflare R2 is S3-compatible, and only the protocol is used, through Cloudflare's own
+  tooling (Wrangler) with a Cloudflare-scoped token. The AWS client is not that tooling.
+- If a task seems to need AWS, stop and say so; it is the owner's decision, and the default is
+  no.
+
 ### No third party unless asked
 
 Do not add a vendor, SDK, package, SaaS or external API unless the owner asks for it in that

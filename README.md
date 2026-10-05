@@ -17,14 +17,18 @@ repository owns the rules and the checks that every bundle is held to.
 | `scripts/sync.mjs` | Developer machine tool: copies the rules and the caller workflow into a repository |
 | `scripts/migrate-captures.mjs` | Upload capture directories to the CDN (Cloudflare R2); captures are not committed |
 | `.cursor/mcp.json` | The Cloudflare MCP servers; `sync.mjs` copies it into every repository, so all users get them |
+| `.cursor/hooks/` | The shell hook that blocks AWS; `sync.mjs` copies it into every repository |
+| `scripts/no-aws-guard.sh` | Fail when AWS tooling, an SDK, a credential or an endpoint appears |
 | `sync/repos.json` | The manifest `sync.mjs` reads: which repositories, whose they are, which paths are front end |
 | `actions/okf-check/` | Composite action wrapping `okf.mjs` |
 | `actions/frontend-guard/` | Composite action wrapping `frontend-guard.sh` |
+| `actions/no-aws-guard/` | Composite action wrapping `no-aws-guard.sh` |
 | `.github/workflows/okf.yml` | Reusable: frontmatter, index parity, doc freshness |
 | `.github/workflows/frontend-guard.yml` | Reusable: flags a front-end diff |
 | `.github/workflows/agents-guard.yml` | Reusable: fails when a repository's `AGENTS.md` drifts from the canonical copy |
+| `.github/workflows/no-aws-guard.yml` | Reusable: fails when AWS appears anywhere in a repository |
 
-There are only three workflows here, and none needs a secret. Anything that would need one
+There are four workflows here, and none needs a secret. Anything that would need one
 does not belong in this repository.
 
 ## Adopting it in a repository

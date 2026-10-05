@@ -1,19 +1,20 @@
 #!/usr/bin/env node
 // Upload capture directories to the CDN (Cloudflare R2), keyed by repository path.
 //
-//   R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... \
+//   CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... \
 //     node scripts/migrate-captures.mjs --repo=kaz-control --root=app/screens
 //   ... --dry-run
 //
 // Captures are not committed (see docs/RUNNING-ON-GCP.md). This is the one-time
-// move and the repeat path for new captures. It shells out to the AWS CLI, which
-// speaks the S3 API R2 exposes, so no SDK is added to the repository.
+// move and the repeat path for new captures. It uploads with Cloudflare's own
+// Wrangler CLI and a Cloudflare token. No AWS tooling, SDK or credential is used:
+// R2 is S3-compatible, and Wrangler is the client (see AGENTS.md, "No AWS").
 //
 // The key layout mirrors the repository path: <repo>/<path/within/repo>.
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 
 const argv = process.argv.slice(2);
 const dryRun = argv.includes("--dry-run");
@@ -22,42 +23,59 @@ const arg = (name) => argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.l
 const repo = arg("repo");
 const roots = argv.filter((a) => a.startsWith("--root=")).map((a) => a.slice("--root=".length));
 const bucket = process.env.R2_BUCKET ?? "kaz-assets";
-const account = process.env.R2_ACCOUNT_ID;
-const key = process.env.R2_ACCESS_KEY_ID;
-const secret = process.env.R2_SECRET_ACCESS_KEY;
+const account = process.env.CLOUDFLARE_ACCOUNT_ID;
+const token = process.env.CLOUDFLARE_API_TOKEN;
 
 if (!repo || roots.length === 0) {
   console.error("usage: migrate-captures.mjs --repo=<name> --root=<path> [--root=<path>...] [--dry-run]");
   process.exit(2);
 }
-if (!dryRun && (!account || !key || !secret)) {
-  console.error("R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are required (or pass --dry-run)");
+if (!dryRun && (!account || !token)) {
+  console.error("CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are required (or pass --dry-run)");
   process.exit(2);
 }
 
-const endpoint = `https://${account}.r2.cloudflarestorage.com`;
+const CACHE = "public, max-age=31536000, immutable";
 
+/** Every file under a directory, recursively. */
+function walk(dir) {
+  const out = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walk(full));
+    else if (entry.isFile()) out.push(full);
+  }
+  return out;
+}
+
+let uploaded = 0;
 for (const root of roots) {
   if (!existsSync(root)) {
     console.error(`skip: ${root} does not exist`);
     continue;
   }
-  const dest = `s3://${bucket}/${repo}/${root.replace(/\/$/, "")}`;
-  const args = [
-    "s3", "cp", root, `${dest}/`,
-    "--recursive",
-    "--exclude", "README.md",
-    "--exclude", "*.md",
-    "--cache-control", "public, max-age=31536000, immutable",
-    ...(dryRun ? ["--dryrun"] : []),
-  ];
-  if (!dryRun) args.push("--endpoint-url", endpoint);
-  console.log(`upload: ${root} -> ${dest}/`);
-  const res = spawnSync("aws", args, {
-    stdio: "inherit",
-    env: { ...process.env, AWS_ACCESS_KEY_ID: key, AWS_SECRET_ACCESS_KEY: secret, AWS_DEFAULT_REGION: "auto" },
-  });
-  if (res.status !== 0) process.exit(res.status ?? 1);
+  const files = walk(root).filter((f) => !f.endsWith(".md"));
+  console.log(`upload: ${files.length} file(s) ${root} -> r2://${bucket}/${repo}/${root.replace(/\/$/, "")}/`);
+
+  for (const file of files) {
+    const key = `${repo}/${relative(root, file)}`.replace(/\/+/g, "/");
+    const target = `${bucket}/${key}`;
+    if (dryRun) {
+      console.log(`  dry-run ${target}`);
+      uploaded += 1;
+      continue;
+    }
+    const res = spawnSync(
+      "npx",
+      ["-y", "wrangler", "r2", "object", "put", target, "--file", file, "--cache-control", CACHE, "--remote"],
+      { stdio: "inherit", env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: account, CLOUDFLARE_API_TOKEN: token } },
+    );
+    if (res.status !== 0) {
+      console.error(`failed: ${file}`);
+      process.exit(res.status ?? 1);
+    }
+    uploaded += 1;
+  }
 }
 
-if (dryRun) console.log("dry run: nothing uploaded");
+console.log(dryRun ? `dry run: ${uploaded} file(s), nothing uploaded` : `uploaded ${uploaded} file(s)`);

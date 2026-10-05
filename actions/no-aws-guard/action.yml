@@ -1,0 +1,9 @@
+name: No AWS guard
+description: Fail when AWS tooling, an SDK, a credential or an endpoint appears anywhere in the repository.
+
+runs:
+  using: composite
+  steps:
+    - name: Scan the tracked tree for AWS
+      shell: bash
+      run: bash "${{ github.action_path }}/../../scripts/no-aws-guard.sh"

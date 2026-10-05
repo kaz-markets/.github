@@ -30,6 +30,9 @@ const agentRules = readFileSync("AGENTS.md", "utf8");
 const okfScript = readFileSync("scripts/okf.mjs", "utf8");
 // The Cloudflare MCP servers, so every repository gets the same agent tooling.
 const cursorMcp = readFileSync(".cursor/mcp.json", "utf8");
+// The shell hook that blocks AWS, and its config, so every repository blocks it too.
+const cursorHooks = readFileSync(".cursor/hooks.json", "utf8");
+const noAwsHook = readFileSync(".cursor/hooks/no-aws.sh", "utf8");
 
 const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
 const branch = `okf/sync-${stamp}`;
@@ -63,6 +66,7 @@ function callerWorkflow(repo) {
     );
   }
 
+  lines.push("  noaws:", "    uses: kaz-markets/.github/.github/workflows/no-aws-guard.yml@main", "");
   lines.push("  agents:", "    uses: kaz-markets/.github/.github/workflows/agents-guard.yml@main", "");
   return lines.join("\n");
 }
@@ -128,6 +132,8 @@ for (const repo of selected) {
   if (writeIfChanged(join(dir, "AGENTS.md"), agentRules)) touched.push("AGENTS.md");
   if (writeIfChanged(join(dir, "scripts/okf.mjs"), okfScript)) touched.push("scripts/okf.mjs");
   if (writeIfChanged(join(dir, ".cursor/mcp.json"), cursorMcp)) touched.push(".cursor/mcp.json");
+  if (writeIfChanged(join(dir, ".cursor/hooks.json"), cursorHooks)) touched.push(".cursor/hooks.json");
+  if (writeIfChanged(join(dir, ".cursor/hooks/no-aws.sh"), noAwsHook)) touched.push(".cursor/hooks/no-aws.sh");
   if (writeIfChanged(join(dir, ".github/workflows/okf.yml"), callerWorkflow(repo))) {
     touched.push(".github/workflows/okf.yml");
   }

@@ -1,0 +1,22 @@
+name: no aws
+
+# Reusable. A repository calls it with:
+#
+#   jobs:
+#     noaws:
+#       uses: kaz-markets/.github/.github/workflows/no-aws-guard.yml@main
+#
+# AWS is not a kaz vendor (AGENTS.md, "No AWS"). This fails a pull request that
+# introduces AWS tooling, an SDK, a credential or an endpoint, and it runs on a
+# schedule so drift is caught even when no one is pushing.
+
+on:
+  workflow_call:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: kaz-markets/.github/actions/no-aws-guard@main
