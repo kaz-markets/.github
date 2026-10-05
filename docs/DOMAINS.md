@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-04T20:55:00Z
+timestamp: 2026-10-05T05:30:00Z
 code: []
 ---
 
@@ -46,9 +46,9 @@ gcloud run services update "$SERVICE" \
   --project kaz-markets-prod --region us-east4 --no-invoker-iam-check
 ```
 
-Current exceptions: `bracco-app` (the player web app) and `bet105-skin` (the bet105 concept
-book) are public this way for the demo. Treat that as a demo posture, not the norm; every
-other service stays IAP-gated.
+Current exceptions: `bracco-app` and `bracco-app-demo` (the two player web app hosts) and
+`bet105-skin` (the bet105 concept book) are public this way for the demo. Treat that as a
+demo posture, not the norm; every other service stays IAP-gated.
 
 ## The app pipeline
 
@@ -59,7 +59,8 @@ its hostnames:
 
 | Workflow | App | Service | Domains | Gate |
 |---|---|---|---|---|
-| `deploy-app.yml` | `app/` | `bracco-app` | `kaz.markets`, `www.kaz.markets` | public |
+| `deploy-app.yml` | `app/` (current development) | `bracco-app-demo` | `demo.kaz.markets` | public |
+| `deploy-original.yml` | `app/` frozen, branch `original-demo` | `bracco-app` | `kaz.markets`, `www.kaz.markets` | public |
 | `deploy-admin.yml` | `admin/` | `kaz-admin` | `admin.kaz.markets` | IAP |
 | `deploy.yml` | `bet105-concept/` | `bet105-skin` | `concept.kaz.markets` | public |
 
@@ -71,6 +72,24 @@ or needs environment variables and Secret Manager values on the service.
 
 The pipeline needs two inputs: the repository secret `CLOUDFLARE_API_TOKEN` (Zone/DNS Edit)
 and the repository variable `CF_ZONE_ID`.
+
+## The player app: the apex is frozen, development is on demo (2026-10-05)
+
+The player web app under `kaz-control/app/` is served from two hosts on two Cloud Run
+services, so an in-progress front-end change never changes what a visitor sees at the apex:
+
+- `kaz.markets` and `www.kaz.markets` -> `bracco-app`, the **frozen original**: the first
+  version of the app, kept on the `original-demo` branch in `kaz-control` (commit `6fdb4d8`).
+  It is deployed by hand only, through `deploy-original.yml`.
+- `demo.kaz.markets` -> `bracco-app-demo`, **current development**: whatever is on
+  `kaz-control` `main`, deployed by `deploy-app.yml` on every push to `main`.
+
+Both build from the one Artifact Registry repository `bracco-app`.
+
+Consequence for front-end work: a change merged to `kaz-control` `main` ships to
+`demo.kaz.markets`, not to `kaz.markets`. Nothing merged to `main` updates the apex. Do not
+run `deploy-original.yml` to publish front-end work; it exists to re-publish the frozen
+original. Updating `kaz.markets` is the owner's call.
 
 ## Domain verification is per account
 
@@ -214,9 +233,14 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 
 ## Status
 
-- `kaz.markets` (the apex) -> Cloud Run service `bracco-app`, the player web app from
-  `kaz-control/app`. Public for the demo via `--no-invoker-iam-check`, not IAP.
+- `kaz.markets` (the apex) -> Cloud Run service `bracco-app`, the **frozen original** player
+  web app from `kaz-control/app`. It is the first version that shipped (branch `original-demo`,
+  commit `6fdb4d8`, 2026-10-02) and is deployed by hand only, with `deploy-original.yml`.
+  Public for the demo via `--no-invoker-iam-check`, not IAP.
 - `www.kaz.markets` -> `bracco-app`, the same service as the apex.
+- `demo.kaz.markets` -> Cloud Run service `bracco-app-demo`, the **current development**
+  player web app from `kaz-control` `main`, deployed by `deploy-app.yml` on every push to
+  `main`. Public the same way.
 - `admin.kaz.markets` -> Cloud Run service `kaz-admin`, the back office from
   `kaz-control/admin`. IAP gated for `domain:kaz.markets`.
 - `reports.kaz.markets` -> Cloud Run service `reports`, IAP gated for `domain:kaz.markets`.
@@ -230,7 +254,7 @@ loads. IAP has no charge. DNS is free at Cloudflare.
   not a Cloud Run mapping, so the Mac dials out and needs no inbound firewall. See
   `kaz-msg/docs/BLUEBUBBLES.md`.
 - DNS at Cloudflare, in the `Dh@drhamilton.dev's Account` zone, all DNS only:
-  `CNAME www`, `CNAME admin`, `CNAME reports`, `CNAME concept`, `CNAME msg` ->
+  `CNAME www`, `CNAME demo`, `CNAME admin`, `CNAME reports`, `CNAME concept`, `CNAME msg` ->
   `ghs.googlehosted.com`, `CNAME bb` -> the tunnel, and at the apex four `A` plus four `AAAA`
   records pointing at the addresses Google returned for the mapping.
 - For the Cloud Run mappings, Google issues the managed certificates asynchronously once the
