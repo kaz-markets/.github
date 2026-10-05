@@ -1,0 +1,64 @@
+name: node ci
+
+# Reusable. A repository calls it with:
+#
+#   jobs:
+#     ci:
+#       uses: kaz-markets/.github/.github/workflows/node-ci.yml@main
+#       with:
+#         working-directory: server
+#
+# Installs one Node workspace, then type-checks and tests it. A step is skipped
+# when its script is set to "" in the caller, so one workflow fits a service with
+# a suite, a package with only a type check, and a front end with neither.
+# `working-directory` defaults to the repository root, so a single-package
+# repository needs no input.
+#
+# `npm ci` is the only install path. A lockfile is required: a CI that resolves
+# different versions from a developer's machine is not a CI.
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node version to run on.
+        type: string
+        default: "22"
+      working-directory:
+        description: Workspace to install and test, relative to the repository root.
+        type: string
+        default: "."
+      typecheck-script:
+        description: npm script for the type check. Empty skips the step.
+        type: string
+        default: typecheck
+      test-script:
+        description: npm script for the test run. Empty skips the step.
+        type: string
+        default: test
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Install
+        working-directory: ${{ inputs.working-directory }}
+        run: npm ci --no-audit --no-fund
+
+      - name: Type check
+        if: ${{ inputs.typecheck-script != '' }}
+        working-directory: ${{ inputs.working-directory }}
+        run: npm run ${{ inputs.typecheck-script }}
+
+      - name: Test
+        if: ${{ inputs.test-script != '' }}
+        working-directory: ${{ inputs.working-directory }}
+        run: npm run ${{ inputs.test-script }}

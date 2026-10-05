@@ -1,0 +1,60 @@
+name: python ci
+
+# Reusable. A repository calls it with:
+#
+#   jobs:
+#     ci:
+#       uses: kaz-markets/.github/.github/workflows/python-ci.yml@main
+#       with:
+#         working-directory: .
+#
+# Installs a Python package, lints and format-checks it with ruff, then runs
+# pytest. AGENTS.md makes Python the default for new backend work, so this is
+# the counterpart to node-ci.yml.
+#
+# The ruff version is pinned here rather than in the repository, so the standard
+# is one place. The rules live in the synced ruff.toml at the repository root.
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: Python version to run on.
+        type: string
+        default: "3.12"
+      working-directory:
+        description: Package directory, relative to the repository root.
+        type: string
+        default: "."
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+          cache-dependency-path: ${{ inputs.working-directory }}/pyproject.toml
+
+      - name: Install
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install "ruff==0.16.10"
+          python -m pip install -e ".[dev]" || python -m pip install -e .
+
+      - name: Lint
+        working-directory: ${{ inputs.working-directory }}
+        run: ruff check .
+
+      - name: Format
+        working-directory: ${{ inputs.working-directory }}
+        run: ruff format --check .
+
+      - name: Test
+        working-directory: ${{ inputs.working-directory }}
+        run: python -m pytest -q

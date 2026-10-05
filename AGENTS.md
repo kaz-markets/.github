@@ -194,8 +194,30 @@ in `docs/TASKS.md`.
 - Never commit `.env*`, any `CREDENTIALS.md`, `.data-*` or native build output.
 - No em or en dashes, and no bet or wager wording, in player-facing copy.
 
+## Lint, format and structure are checked
+
+One tool per language, configured once in this repository and synced into every other:
+
+- TypeScript is **Biome** (`biome.json`): lint, formatting and import order in one command.
+- Python is **ruff** (`ruff.toml`): `ruff check` and `ruff format`.
+
+New and changed code must pass. The lint check reads only the files a pull request changes,
+so the standard lands on what you touch, and no one reformats a legacy tree to go green.
+
+The architecture check reads `.dependency-cruiser.cjs`, which holds two rules from this file
+as structure: a service never imports the front end, and the front end never imports a
+service. Type checks and tests run through the reusable workflows named below.
+
 ## The shared checks
 
+- `kaz-markets/.github/.github/workflows/node-ci.yml` - `npm ci`, type check and test one
+  Node workspace. Pass `working-directory` and, when a script is absent, `""`.
+- `kaz-markets/.github/.github/workflows/python-ci.yml` - the same for a Python package:
+  ruff, then pytest.
+- `kaz-markets/.github/.github/workflows/lint.yml` - Biome over the files a pull request
+  changes.
+- `kaz-markets/.github/.github/workflows/arch.yml` - dependency-cruiser over the structural
+  rules, and knip as a report.
 - `kaz-markets/.github/.github/workflows/okf.yml` - frontmatter, index parity, doc freshness.
 - `kaz-markets/.github/.github/workflows/frontend-guard.yml` - flags a front-end diff.
 - `kaz-markets/.github/.github/workflows/agents-guard.yml` - fails when a repository's copy of

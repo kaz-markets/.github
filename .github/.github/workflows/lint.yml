@@ -1,0 +1,59 @@
+name: lint
+
+# Reusable. A repository calls it with:
+#
+#   jobs:
+#     lint:
+#       uses: kaz-markets/.github/.github/workflows/lint.yml@main
+#       with:
+#         working-directory: server
+#
+# Runs Biome (one tool for lint, format and import order) over the TypeScript in
+# one workspace. The rules and the formatter settings are the synced biome.json
+# at the repository root.
+#
+# It checks only the files a pull request touches, against the merge base. That
+# is deliberate: the standard lands on new and changed code, and no pull request
+# has to reformat a legacy tree to go green. Set changed-only: false to check
+# everything.
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node version to run on.
+        type: string
+        default: "22"
+      working-directory:
+        description: Workspace to lint, relative to the repository root.
+        type: string
+        default: "."
+      changed-only:
+        description: Check only files changed against the base ref.
+        type: boolean
+        default: true
+
+jobs:
+  biome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The changed-files check needs the base commit in the clone.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Biome
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.changed-only }}" = "true" ] && [ -n "$BASE" ]; then
+            npx -y @biomejs/biome@2.5.15 ci --changed --since="$BASE" .
+          else
+            npx -y @biomejs/biome@2.5.15 ci .
+          fi
