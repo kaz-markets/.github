@@ -4,7 +4,7 @@ title: "Running on GCP"
 description: "How to run, deploy and store things on Google Cloud for KAZ: the free-tier rule, Cloud Run and domain mappings, IAP, Workload Identity Federation, and where captures live."
 owner: dan
 tags: [gcp, cloud-run, deploy, free-tier, artifacts]
-timestamp: 2026-10-04T18:30:00Z
+timestamp: 2026-10-05T00:05:00Z
 code: []
 ---
 
@@ -88,12 +88,14 @@ Each repository that used to hold captures lists the moved directories in its `.
 and keeps a marker `README.md` in each one pointing at the CDN. To add captures:
 
 ```bash
-R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... \
+CLOUDFLARE_ACCOUNT_ID=... CLOUDFLARE_API_TOKEN=... \
   node scripts/migrate-captures.mjs --repo=<name> --root=<path>
 ```
 
-The R2 token is an API token held as GitHub secrets (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
-`R2_SECRET_ACCESS_KEY`), never committed.
+The upload runs through Cloudflare's own Wrangler CLI with a Cloudflare token held as GitHub
+secrets (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`), never committed. No AWS tooling,
+SDK or credential is used; R2 is S3-compatible and Wrangler is the client (see `AGENTS.md`,
+"No AWS").
 
 Why R2 and not GCS: R2 has no egress charge and a 10 GB free tier, and Cloudflare is already
 in the stack for DNS. GCS in `us-east4` is a small paid SKU, which the free-tier rule treats as
