@@ -5,7 +5,7 @@ description: "The shared CI: reusable type-check and test workflows, Biome for T
 owner: dan
 tags: [ci, quality, biome, ruff, testing, architecture]
 timestamp: 2026-10-05T17:55:00Z
-code: [".github/.github/workflows/node-ci.yml", ".github/.github/workflows/python-ci.yml", ".github/.github/workflows/lint.yml", ".github/.github/workflows/arch.yml", "biome.json", "ruff.toml", ".dependency-cruiser.cjs", "scripts/sync.mjs"]
+code: [".github/workflows/node-ci.yml", ".github/workflows/python-ci.yml", ".github/workflows/lint.yml", ".github/workflows/arch.yml", "biome.json", "ruff.toml", ".dependency-cruiser.cjs", "scripts/sync.mjs"]
 ---
 
 # Quality checks
