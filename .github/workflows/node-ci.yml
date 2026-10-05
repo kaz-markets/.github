@@ -36,6 +36,11 @@ on:
         description: npm script for the test run. Empty skips the step.
         type: string
         default: test
+      build-script:
+        description: npm script to build first. Empty skips the step. A workspace whose
+          packages resolve their types from dist/ needs this before the type check.
+        type: string
+        default: ""
       install-command:
         description: Install command. Override when a lockfile needs an extra flag.
         type: string
@@ -56,6 +61,11 @@ jobs:
       - name: Install
         working-directory: ${{ inputs.working-directory }}
         run: ${{ inputs.install-command }}
+
+      - name: Build
+        if: ${{ inputs.build-script != '' }}
+        working-directory: ${{ inputs.working-directory }}
+        run: npm run ${{ inputs.build-script }}
 
       - name: Type check
         if: ${{ inputs.typecheck-script != '' }}
