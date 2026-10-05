@@ -65,7 +65,9 @@ It also fails a dependency cycle and reports unresolved imports and orphan modul
 
 dependency-cruiser parses TypeScript through the project's own compiler, so it must sit
 beside it in `node_modules`. The workflow installs it `--no-save --no-package-lock`, which
-means no repository gains a dependency and no lockfile changes. Run it the same way locally:
+means no repository gains a dependency and no lockfile changes. A workspace whose lockfile
+needs `--legacy-peer-deps` passes `install-flags`, which is applied to both installs. Run it
+the same way locally:
 
 ```bash
 npm install --no-save --no-package-lock dependency-cruiser@18.5.0

@@ -41,7 +41,8 @@ module.exports = {
     {
       name: "not-to-unresolvable",
       severity: "warn",
-      comment: "An import that does not resolve to a file on disk. Usually a stale path or a missing alias.",
+      comment:
+        "An import that does not resolve to a file on disk. Usually a stale path or a missing alias.",
       from: {},
       to: { couldNotResolve: true },
     },
