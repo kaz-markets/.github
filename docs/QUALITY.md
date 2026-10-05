@@ -42,7 +42,9 @@ service with a suite, a package with only a type check, and a front end with nei
 ## The standard: one tool per language
 
 - **TypeScript - Biome** (`biome.json`). Lint, formatting and import order in one command.
-  Pinned in the workflow at `@biomejs/biome@2.5.15`.
+  Pinned in the workflow at `@biomejs/biome@2.5.15`. The `recommended` preset is on, with
+  `style.noNonNullAssertion` off: `!` is idiomatic TypeScript and the compiler already
+  guards the access, so the rule only creates churn.
 - **Python - ruff** (`ruff.toml`). `ruff check` and `ruff format`. Pinned at `==0.16.10`.
 
 The lint workflow checks **only the files a pull request changes**, against the merge base
