@@ -4,7 +4,7 @@ title: "Quality checks"
 description: "The shared CI: reusable type-check and test workflows, Biome for TypeScript, ruff for Python, and the architecture rules that hold the AGENTS.md invariants as structure."
 owner: dan
 tags: [ci, quality, biome, ruff, testing, architecture]
-timestamp: 2026-10-05T17:55:00Z
+timestamp: 2026-10-12T14:00:00Z
 code: [".github/workflows/node-ci.yml", ".github/workflows/python-ci.yml", ".github/workflows/lint.yml", ".github/workflows/arch.yml", "biome.json", "ruff.toml", ".dependency-cruiser.cjs", "scripts/sync.mjs"]
 ---
 
@@ -20,7 +20,7 @@ standard is one place.
 | Workflow | What it runs | Call it with |
 |---|---|---|
 | `node-ci.yml` | `npm ci`, then the workspace's type check and test scripts | `working-directory` |
-| `python-ci.yml` | install, `ruff check`, `ruff format --check`, `pytest` | `working-directory` |
+| `python-ci.yml` | install (from `uv.lock` when present), `ruff check`, `ruff format --check`, `pytest` | `working-directory` |
 | `lint.yml` | Biome over the files a pull request changes | `working-directory` |
 | `arch.yml` | dependency-cruiser (blocking) and knip (report) | `working-directory`, `target` |
 
@@ -46,6 +46,10 @@ service with a suite, a package with only a type check, and a front end with nei
   `style.noNonNullAssertion` off: `!` is idiomatic TypeScript and the compiler already
   guards the access, so the rule only creates churn.
 - **Python - ruff** (`ruff.toml`). `ruff check` and `ruff format`. Pinned at `==0.16.10`.
+
+A Python repository that commits a `uv.lock` installs with `uv sync --locked`, which fails when
+the lock and `pyproject.toml` disagree, and runs on the version in `.python-version`. A
+repository with neither file keeps the old path: the `python-version` input and a pip install.
 
 The lint workflow checks **only the files a pull request changes**, against the merge base
 (`biome ci --changed --since=<base>`). That is deliberate: the standard lands on new and
