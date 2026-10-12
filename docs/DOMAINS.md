@@ -52,7 +52,6 @@ other service stays IAP-gated.
 
 ## The app pipeline
 
-`kaz-control` carries one deploy action, `.github/actions/cloudrun-deploy`, that does the
 whole job: build the image, push it, deploy, attach the domains, write the DNS records, and
 optionally gate the service with IAP. Each app has a thin caller that names its directory and
 its hostnames:
@@ -215,20 +214,14 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 ## Status
 
 - `kaz.markets` (the apex) -> Cloud Run service `bracco-app`, the player web app from
-  `kaz-control/app`. Public for the demo via `--no-invoker-iam-check`, not IAP.
 - `www.kaz.markets` -> `bracco-app`, the same service as the apex.
 - `admin.kaz.markets` -> Cloud Run service `kaz-admin`, the back office from
-  `kaz-control/admin`. IAP gated for `domain:kaz.markets`.
 - `reports.kaz.markets` -> Cloud Run service `reports`, IAP gated for `domain:kaz.markets`.
 - `concept.kaz.markets` -> Cloud Run service `bet105-skin`, the bet105 concept book from
-  `kaz-control/bet105-concept`. Public for the demo via `--no-invoker-iam-check`, not IAP.
-- `msg.kaz.markets` -> Cloud Run service `kaz-msg`, the update relay from
-  `kaz-markets/kaz-msg`. Public via `--no-invoker-iam-check`; every write is gated by a
   bearer token. Live, certificate issued 2026-10-04.
 - `bb.kaz.markets` -> Cloudflare Tunnel `kaz-bot`
   (`542fdce1-520d-49d0-90d9-06965a008ad4`) to BlueBubbles on the bot Mac. This is a tunnel,
   not a Cloud Run mapping, so the Mac dials out and needs no inbound firewall. See
-  `kaz-msg/docs/BLUEBUBBLES.md`.
 - DNS at Cloudflare, in the `Dh@drhamilton.dev's Account` zone, all DNS only:
   `CNAME www`, `CNAME admin`, `CNAME reports`, `CNAME concept`, `CNAME msg` ->
   `ghs.googlehosted.com`, `CNAME bb` -> the tunnel, and at the apex four `A` plus four `AAAA`
@@ -240,4 +233,3 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 
 - `www.kaz.markets` maps to the player app; a separate marketing site would need its own
   service and domain.
-- `site/` in `kaz-control` is a local-only portfolio rebuild and must not be deployed.

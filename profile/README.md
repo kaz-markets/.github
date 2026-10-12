@@ -24,11 +24,7 @@ platform and the same database.
 
 | Repository | What it is |
 |---|---|
-| **kaz-control** | The platform and the product: the player web app, the native iPhone app, the platform server (ledger, pricing, trading, casino, bonuses, affiliates, messaging, wallet), the operator back office, the marketing site, and the shared packages. The concept book lives inside it as `bet105-concept/`. |
-| **kaz-socket** | The always-on prediction-market feed edge. Holds the upstream provider connections, keeps a live price cache with a TTL, and fans changes out on sequence-numbered rooms. The inbound half of the two-repo stack. |
-| **prediction-markets-report** | The published architecture plan and API survey behind `kaz-socket`. Public, at <https://danhamilt.github.io/prediction-markets-report/>. |
 
-A price reaches a page in two halves: `kaz-socket` holds the provider
 connections and publishes changes, and the app consumes them. The socket is
 never hosted inside the app, and the app never holds a provider connection.
 

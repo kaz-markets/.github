@@ -1,14 +1,12 @@
 {
   "repos": [
     {
-      "name": "kaz-socket",
       "owner": "danhamilt",
       "protected": "public/",
       "allowAuthors": "danhamilt",
       "bootstrap": true
     },
     {
-      "name": "prediction-markets-report",
       "owner": "danhamilt",
       "bundle": "knowledge",
       "index": "knowledge/INDEX.md",
@@ -16,13 +14,11 @@
       "bootstrap": true
     },
     {
-      "name": "kaz-msg",
       "owner": "danhamilt",
       "frontend": false,
       "bootstrap": true
     },
     {
-      "name": "kaz-control",
       "owner": "danhamilt",
       "protected": "app/ admin/ mobile/ site/ bet105-concept/",
       "allowAuthors": "jacobq61,danhamilt",
