@@ -14,6 +14,11 @@ name: python ci
 #
 # The ruff version is pinned here rather than in the repository, so the standard
 # is one place. The rules live in the synced ruff.toml at the repository root.
+#
+# A repository with a uv.lock installs from it with `uv sync --locked`, which fails
+# when the lock and pyproject.toml disagree, so CI resolves the tree a developer
+# does. One with a .python-version runs on that version. A repository with neither
+# keeps the previous behaviour: the python-version input and a pip install.
 
 on:
   workflow_call:
@@ -34,10 +39,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
+        if: ${{ hashFiles(format('{0}/.python-version', inputs.working-directory)) == '' }}
         with:
           python-version: ${{ inputs.python-version }}
           cache: pip
           cache-dependency-path: ${{ inputs.working-directory }}/pyproject.toml
+
+      - uses: actions/setup-python@v5
+        if: ${{ hashFiles(format('{0}/.python-version', inputs.working-directory)) != '' }}
+        with:
+          python-version-file: ${{ inputs.working-directory }}/.python-version
 
       - name: Install
         working-directory: ${{ inputs.working-directory }}
@@ -45,7 +56,13 @@ jobs:
           set -euo pipefail
           python -m pip install --upgrade pip
           python -m pip install "ruff==0.16.10"
-          python -m pip install -e ".[dev]" || python -m pip install -e .
+          if [ -f uv.lock ]; then
+            python -m pip install "uv==0.12.5"
+            uv sync --locked --extra dev
+            echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+          else
+            python -m pip install -e ".[dev]" || python -m pip install -e .
+          fi
 
       - name: Lint
         working-directory: ${{ inputs.working-directory }}
