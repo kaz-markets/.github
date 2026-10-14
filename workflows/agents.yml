@@ -1,0 +1,45 @@
+name: Agents
+
+# Standing Devin agents. Each run opens a tracking issue (label agent:<name>) and starts a Devin
+# session with the playbook in .github/agents/<name>.md.
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: review
+        required: true
+      pr:
+        description: PR number
+        required: false
+
+permissions:
+  issues: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      (!github.event.pull_request.draft && !startsWith(github.event.pull_request.title, 'Test only'))
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DEVIN_API_KEY: ${{ secrets.DEVIN_API_KEY }}
+      DEVIN_ORG_ID: ${{ secrets.DEVIN_ORG_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pick the agent
+        id: pick
+        run: |
+          case "${{ github.event_name }}" in
+            pull_request)
+              echo "agent=review" >> "$GITHUB_OUTPUT"; echo "pr=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT" ;;
+            workflow_dispatch)
+              echo "agent=${{ github.event.inputs.agent }}" >> "$GITHUB_OUTPUT"; echo "pr=${{ github.event.inputs.pr }}" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: Start it
+        if: steps.pick.outputs.agent != ''
+        run: node .github/scripts/devin.mjs agent "${{ steps.pick.outputs.agent }}" "${{ steps.pick.outputs.pr }}"
