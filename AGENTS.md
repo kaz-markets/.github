@@ -67,8 +67,9 @@ project. Treat it as absent.
 - No always-on VM, with exactly one exception: the Always Free `e2-micro` (one per month, in
   `us-central1`, `us-west1` or `us-east1`, 30GB standard disk, 1GB egress). It exists for the
   one workload that cannot run request-billed, the socket, which holds a long-lived upstream
-  connection and needs a stable endpoint. Nothing else belongs on it, and 1GB of egress is a
-  real ceiling for a fanout service, so measure before trusting it.
+  connection and needs a stable endpoint. Per-venue sockets may instead run as Cloudflare
+  Durable Objects (D3). Nothing else belongs on it, and 1GB of egress is a real ceiling for a
+  fanout service, so measure before trusting it.
 - Anything else paid is the owner's decision, in writing, before any code.
 
 ### Data is minimised
@@ -115,6 +116,17 @@ genuinely required, define the interface, ship the local mock, and stop.
 - Scale out, not up. Nothing assumes exactly one instance except where the code takes a lease
   and says so.
 - Bounded memory, bounded queues, bounded logs. Nothing grows without a limit.
+
+### Durable Objects
+
+Cloudflare Durable Objects are allowed only for owner-approved, recorded exceptions. The
+socket clause is one such exception: per-venue feed sockets may run as a `VenueFeedDO` (D3)
+instead of an always-on VM. The current recorded owner exceptions are:
+
+- D1: the HTTP router may be a Cloudflare Worker, overriding "existing TypeScript services are
+  not rewritten".
+- D2: `MarketDO` may store per-market books while `kaz-core` computes quotes statelessly.
+- D3: one `VenueFeedDO` per venue may hold a long-lived upstream feed socket.
 
 ### Demo mode: everything is gated
 
