@@ -33,6 +33,12 @@
       "owner": "danhamilt",
       "bundle": false,
       "frontend": false
+    },
+    {
+      "name": "kaz-landing-page",
+      "owner": "jacobq61",
+      "protected": "src/ index.html",
+      "allowAuthors": "jacobq61,danhamilt"
     }
   ]
 }
