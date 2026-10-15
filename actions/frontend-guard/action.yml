@@ -33,5 +33,7 @@ runs:
         MODE: ${{ inputs.mode }}
         ALLOW: ${{ inputs.allow-authors }}
         BASE: ${{ inputs.base != '' && inputs.base || github.event.pull_request.base.sha || github.event.before || '' }}
+        BASE_REF: ${{ inputs.base == '' && github.event.pull_request.base.ref || '' }}
+        HEAD_SHA: ${{ inputs.base == '' && github.event.pull_request.head.sha || 'HEAD' }}
         AUTHOR: ${{ inputs.author != '' && inputs.author || github.event.pull_request.user.login || github.actor }}
       run: bash "${{ github.action_path }}/../../scripts/frontend-guard.sh"
