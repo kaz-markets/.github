@@ -19,6 +19,16 @@ name: python ci
 # when the lock and pyproject.toml disagree, so CI resolves the tree a developer
 # does. One with a .python-version runs on that version. A repository with neither
 # keeps the previous behaviour: the python-version input and a pip install.
+#
+# A package with a private path dependency (for example kaz-core's ../kaz-openbook)
+# checks the caller out below the workspace root and the sibling beside it, so the
+# path resolves. Set checkout-path to the caller's directory, working-directory to
+# the package inside it, and sibling-repository/sibling-path to the sibling. A
+# private sibling needs a read token in sibling-token.
+#
+# `extra` is the dependency extra passed to `uv sync`, defaulting to the
+# `[project.optional-dependencies] dev` convention. Set it to "" for a package
+# that declares its dev dependencies in `[dependency-groups]` instead.
 
 on:
   workflow_call:
@@ -31,12 +41,53 @@ on:
         description: Package directory, relative to the repository root.
         type: string
         default: "."
+      checkout-path:
+        description: Directory to check the calling repository out into, relative to the
+          workspace root.
+        type: string
+        default: "."
+      extra:
+        description: Dependency extra for `uv sync`. Empty passes none.
+        type: string
+        default: "dev"
+      sibling-repository:
+        description: Repository to check out beside this one, as owner/name. Empty skips it.
+        type: string
+        default: ""
+      sibling-path:
+        description: Directory for the sibling checkout, relative to the workspace root.
+        type: string
+        default: ""
+      sibling-ref:
+        description: Ref of the sibling repository. Empty uses its default branch.
+        type: string
+        default: ""
+    secrets:
+      sibling-token:
+        description: Read token for sibling-repository. Defaults to the workflow token.
+        required: false
 
 jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: ${{ inputs.checkout-path }}
+
+      - name: Check the sibling inputs
+        if: ${{ inputs.sibling-repository != '' && inputs.sibling-path == '' }}
+        run: |
+          echo "::error::sibling-path is required when sibling-repository is set"
+          exit 1
+
+      - uses: actions/checkout@v4
+        if: ${{ inputs.sibling-repository != '' }}
+        with:
+          repository: ${{ inputs.sibling-repository }}
+          path: ${{ inputs.sibling-path }}
+          ref: ${{ inputs.sibling-ref }}
+          token: ${{ secrets.sibling-token || github.token }}
 
       - uses: actions/setup-python@v5
         if: ${{ hashFiles(format('{0}/.python-version', inputs.working-directory)) == '' }}
@@ -52,13 +103,19 @@ jobs:
 
       - name: Install
         working-directory: ${{ inputs.working-directory }}
+        env:
+          EXTRA: ${{ inputs.extra }}
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
           python -m pip install "ruff==0.16.10"
           if [ -f uv.lock ]; then
             python -m pip install "uv==0.12.5"
-            uv sync --locked --extra dev
+            if [ -n "$EXTRA" ]; then
+              uv sync --locked --extra "$EXTRA"
+            else
+              uv sync --locked
+            fi
             echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
           else
             python -m pip install -e ".[dev]" || python -m pip install -e .

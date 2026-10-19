@@ -1,44 +1,57 @@
 {
   "repos": [
     {
-      "name": "kaz-socket",
+      "name": "kaz",
       "owner": "danhamilt",
-      "protected": "public/",
-      "allowAuthors": "danhamilt",
-      "bootstrap": true
+      "frontend": false
     },
     {
-      "name": "prediction-markets-report",
+      "name": "kaz-adapters",
       "owner": "danhamilt",
-      "bundle": "knowledge",
-      "index": "knowledge/INDEX.md",
-      "frontend": false,
-      "bootstrap": true
+      "frontend": false
     },
     {
-      "name": "kaz-msg",
-      "owner": "danhamilt",
-      "frontend": false,
-      "bootstrap": true
-    },
-    {
-      "name": "kaz-control",
-      "owner": "danhamilt",
-      "protected": "app/ admin/ mobile/ site/ bet105-concept/",
-      "allowAuthors": "jacobq61,danhamilt",
-      "mode": "fail"
-    },
-    {
-      "name": "kaz-routing-service",
+      "name": "kaz-core",
       "owner": "danhamilt",
       "bundle": false,
       "frontend": false
     },
     {
-      "name": "kaz-landing-page",
-      "owner": "jacobq61",
-      "protected": "src/ index.html",
-      "allowAuthors": "jacobq61,danhamilt"
+      "name": "kaz-docs",
+      "owner": "danhamilt",
+      "bundle": false,
+      "frontend": false
+    },
+    {
+      "name": "kaz-openbook",
+      "owner": "danhamilt",
+      "bundle": false,
+      "frontend": false
+    },
+    {
+      "name": "kaz-app",
+      "owner": "danhamilt",
+      "bundle": false,
+      "protected": "src/ index.html public/",
+      "allowAuthors": "danhamilt"
+    },
+    {
+      "name": "kaz-template-frontend",
+      "owner": "danhamilt",
+      "bundle": false,
+      "protected": "src/ index.html public/",
+      "allowAuthors": "danhamilt"
+    },
+    {
+      "name": "kaz-template-python",
+      "owner": "danhamilt",
+      "bundle": false,
+      "frontend": false
+    },
+    {
+      "name": ".github",
+      "owner": "danhamilt",
+      "frontend": false
     }
   ]
 }
