@@ -4,7 +4,7 @@ title: "Quality checks"
 description: "The shared CI: reusable type-check and test workflows, Biome for TypeScript, ruff for Python, and the architecture rules that hold the AGENTS.md invariants as structure."
 owner: dan
 tags: [ci, quality, biome, ruff, testing, architecture]
-timestamp: 2026-10-12T14:00:00Z
+timestamp: 2026-10-19T16:00:00Z
 code: [".github/workflows/node-ci.yml", ".github/workflows/python-ci.yml", ".github/workflows/lint.yml", ".github/workflows/arch.yml", "biome.json", "ruff.toml", ".dependency-cruiser.cjs", "scripts/sync.mjs"]
 ---
 
@@ -20,7 +20,7 @@ standard is one place.
 | Workflow | What it runs | Call it with |
 |---|---|---|
 | `node-ci.yml` | `npm ci`, then the workspace's type check and test scripts | `working-directory` |
-| `python-ci.yml` | install (from `uv.lock` when present), `ruff check`, `ruff format --check`, `pytest` | `working-directory` |
+| `python-ci.yml` | install (from `uv.lock` when present), `ruff check`, `ruff format --check`, `pytest` | `working-directory`, `extra`, sibling inputs |
 | `lint.yml` | Biome over the files a pull request changes | `working-directory` |
 | `arch.yml` | dependency-cruiser (blocking) and knip (report) | `working-directory`, `target` |
 
@@ -50,6 +50,13 @@ service with a suite, a package with only a type check, and a front end with nei
 A Python repository that commits a `uv.lock` installs with `uv sync --locked`, which fails when
 the lock and `pyproject.toml` disagree, and runs on the version in `.python-version`. A
 repository with neither file keeps the old path: the `python-version` input and a pip install.
+
+A package with a private path dependency checks the caller out below the workspace root and
+the sibling beside it: `checkout-path` names the caller's directory, `working-directory` the
+package inside it, and `sibling-repository`/`sibling-path`/`sibling-ref` the sibling.
+`sibling-token` is the read token for a private sibling. `extra` is the dependency extra passed
+to `uv sync` (default `dev`); a package whose dev dependencies live in `[dependency-groups]`
+rather than an optional extra sets `extra: ""`.
 
 The lint workflow checks **only the files a pull request changes**, against the merge base
 (`biome ci --changed --since=<base>`). That is deliberate: the standard lands on new and
