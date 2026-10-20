@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Engineering standards
+    url: https://github.com/kaz-markets/kaz-docs/blob/main/WORKFLOW.md
+    about: Branching, review, linting and contract rules that apply to any task here.
