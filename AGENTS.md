@@ -200,6 +200,26 @@ A report is a doc, or a line in `STATUS.md`, not a message. It never mentions a 
 it never asks for a review, an approval or a merge. The board and the notification rule are
 in `docs/TASKS.md`.
 
+## Devin sessions
+
+Devin (Cognition) is an approved third-party agent. It works from the repos the
+Devin GitHub app is scoped to and opens PRs like any contributor.
+
+- Branches start from a freshly fetched `origin/main` and are named
+  `devin/<n>-<slug>` when the task comes from an issue, `<n>` being the issue
+  number.
+- Devin never merges its own pull requests: `main` protection requires Dan's
+  review. A Devin PR is a proposal, not a deployment.
+- Never touch secrets, `.env*` files, wallet keys, or CI workflow files. If the
+  task seems to need one, stop and comment on the PR instead.
+- Vercel and Cloudflare deploy on merge — a merged PR is a production event.
+  Keep PRs small and say in the PR body when a change is deploy-sensitive.
+- The front end bounds, docs-first rule and knowledge-bundle rule in this file
+  apply to Devin exactly as to any other agent: read `docs/INDEX.md` first, the
+  matching doc next, and update the doc in the same PR.
+- Use the Devin PR template (`.github/PULL_REQUEST_TEMPLATE/devin_pr_template.md`)
+  so review can tell at a glance what ran, what was tested and what is left.
+
 ## Ground rules
 
 - Fake players only. No real provider, keys or account is contacted from these repos.
