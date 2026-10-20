@@ -37,10 +37,14 @@ on:
         description: Extra flags for npm. " --legacy-peer-deps" for a lockfile that needs it.
         type: string
         default: ""
+      runner:
+        description: Runner label. ubuntu-latest (default) or kaztools for the Swiss runner.
+        type: string
+        default: ubuntu-latest
 
 jobs:
   arch:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     steps:
       - uses: actions/checkout@v4
 

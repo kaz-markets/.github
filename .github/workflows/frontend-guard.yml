@@ -24,10 +24,14 @@ on:
         description: Comma-separated logins that may change the front end.
         type: string
         default: ""
+      runner:
+        description: Runner label. ubuntu-latest (default) or kaztools for the Swiss runner.
+        type: string
+        default: ubuntu-latest
 
 jobs:
   guard:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     steps:
       - uses: actions/checkout@v4
         with:

@@ -12,10 +12,15 @@ name: no aws
 
 on:
   workflow_call:
+    inputs:
+      runner:
+        description: Runner label. ubuntu-latest (default) or kaztools for the Swiss runner.
+        type: string
+        default: ubuntu-latest
 
 jobs:
   guard:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     steps:
       - uses: actions/checkout@v4
 

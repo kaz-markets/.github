@@ -1,0 +1,36 @@
+name: runner smoke
+
+# Proves the kaztools runner is registered, online, in the right runner group,
+# and has what the shared workflows need. Manual only: the runner is a Swiss
+# box, and this repository is public, so nothing here may run on a pull request.
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: kaztools
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Where am I
+        run: |
+          set -euo pipefail
+          echo "runner=${RUNNER_NAME}"
+          echo "os=${ImageOS:-unknown}"
+          uname -a
+          free -m
+          df -h /
+
+      - name: Tools
+        run: |
+          set -euo pipefail
+          git --version
+          curl --version | head -1
+          jq --version || echo "jq: missing"
+          docker --version || echo "docker: not available to the runner user"
+
+      - name: Reach GitHub
+        run: |
+          set -euo pipefail
+          curl -fsS -o /dev/null -w 'api.github.com %{http_code}\n' https://api.github.com

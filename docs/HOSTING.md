@@ -20,6 +20,7 @@ platform normally pays a cloud provider for is free on GitHub, and only two thin
 
 | Job | Where | Free because |
 |---|---|---|
+| Run repository CI | GitHub Actions, or the `kaztools` self-hosted runner | Hosted is free within the monthly minutes. `kaztools` is a Swiss box with no inbound port; see `SELF-HOSTED-RUNNER.md` |
 | Build a container image | GitHub Actions | 2,000 minutes a month private, unlimited public. Free plan does not overage-bill, it pauses |
 | Store the image | Artifact Registry (in-region), or GHCR | Artifact Registry pulls with the project identity; GHCR is free only for public images. See "Where the images live" |
 | Any cron | Actions `schedule` | Free, but best-effort: runs can be delayed, and a schedule is disabled after 60 days of repository inactivity. Maintenance only, never anything time-critical |

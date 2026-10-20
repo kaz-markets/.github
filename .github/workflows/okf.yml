@@ -28,10 +28,14 @@ on:
         description: Ref to diff against for the freshness check. Empty derives it from the event.
         type: string
         default: ""
+      runner:
+        description: Runner label. ubuntu-latest (default) or kaztools for the Swiss runner.
+        type: string
+        default: ubuntu-latest
 
 jobs:
   okf:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     steps:
       - uses: actions/checkout@v4
         with:

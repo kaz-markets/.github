@@ -45,10 +45,14 @@ on:
         description: Install command. Override when a lockfile needs an extra flag.
         type: string
         default: "npm ci --no-audit --no-fund"
+      runner:
+        description: Runner label. ubuntu-latest (default) or kaztools for the Swiss runner.
+        type: string
+        default: ubuntu-latest
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     steps:
       - uses: actions/checkout@v4
 

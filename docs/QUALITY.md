@@ -4,8 +4,8 @@ title: "Quality checks"
 description: "The shared CI: reusable type-check and test workflows, Biome for TypeScript, ruff for Python, and the architecture rules that hold the AGENTS.md invariants as structure."
 owner: dan
 tags: [ci, quality, biome, ruff, testing, architecture]
-timestamp: 2026-10-19T16:00:00Z
-code: [".github/workflows/node-ci.yml", ".github/workflows/python-ci.yml", ".github/workflows/lint.yml", ".github/workflows/arch.yml", "biome.json", "ruff.toml", ".dependency-cruiser.cjs", "scripts/sync.mjs"]
+timestamp: 2026-10-20T06:30:00Z
+code: [".github/workflows/node-ci.yml", ".github/workflows/python-ci.yml", ".github/workflows/lint.yml", ".github/workflows/arch.yml", ".github/workflows/okf.yml", ".github/workflows/frontend-guard.yml", ".github/workflows/agents-guard.yml", ".github/workflows/no-aws-guard.yml", ".github/workflows/runner-smoke.yml", "biome.json", "ruff.toml", ".dependency-cruiser.cjs", "scripts/sync.mjs"]
 ---
 
 # Quality checks
@@ -38,6 +38,28 @@ jobs:
 service with a suite, a package with only a type check, and a front end with neither.
 `npm ci` is the only install path by default; a workspace whose lockfile needs an extra flag
 (for example `--legacy-peer-deps`) passes `install-command` instead.
+
+## Where a job runs
+
+Every reusable workflow takes a `runner` input, defaulting to `ubuntu-latest`. A repository
+whose source must stay in Switzerland passes the self-hosted label:
+
+```yaml
+jobs:
+  ci:
+    uses: kaz-markets/.github/.github/workflows/python-ci.yml@main
+    with:
+      working-directory: kaz-core
+      runner: kaztools
+```
+
+The label selects the `kaztools` runner, which is registered into the `swiss-private`
+organization runner group. Only private repositories are in that group: a self-hosted runner
+attached to a public repository will execute fork pull requests. Registration, capacity and
+the security boundary are in `SELF-HOSTED-RUNNER.md`.
+
+Pass one label. `runs-on` matches a runner that carries every label requested, and the
+runner still has its default `self-hosted`, `linux` and `x64` labels.
 
 ## The standard: one tool per language
 
