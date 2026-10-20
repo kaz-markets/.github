@@ -1,0 +1,26 @@
+name: Task
+description: A unit of work — anything an agent or a person will pick up as one task
+labels: []
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: One or two sentences describing DONE. If it needs more than one task, split it.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Done-when evidence
+      description: The command output, screenshot, or check that proves it is finished.
+      placeholder: e.g. `journalctl -u kaz-chat-backup.service` shows one successful run, and one restored room
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Pointers — boxes, repos, PRs, session notes. Secrets never go here.
+    validations:
+      required: false
