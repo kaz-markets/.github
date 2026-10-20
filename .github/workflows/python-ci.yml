@@ -62,6 +62,10 @@ on:
         description: Ref of the sibling repository. Empty uses its default branch.
         type: string
         default: ""
+      runner:
+        description: Runner label. ubuntu-latest (default) or kaztools for the Swiss runner.
+        type: string
+        default: ubuntu-latest
     secrets:
       sibling-token:
         description: Read token for sibling-repository. Defaults to the workflow token.
@@ -69,7 +73,7 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     steps:
       - uses: actions/checkout@v4
         with:
