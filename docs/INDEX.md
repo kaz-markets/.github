@@ -18,7 +18,7 @@ documented yet.
 | Doc | Covers | Owner | Code |
 | --- | --- | --- | --- |
 | [CLOUDFLARE.md](CLOUDFLARE.md) | The Cloudflare skills and MCP servers for agent work on KAZ: what to install, where the config lives, and how it authenticates. | dan | `.cursor/mcp.json` |
-| [DOMAINS.md](DOMAINS.md) | How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it. | dan |  |
+| [DOMAINS.md](DOMAINS.md) | The Cloud Run domain-mapping and IAP mechanism for kaz.markets, and how to add a service or a static site. | dan |  |
 | [HOSTING.md](HOSTING.md) | Where each piece runs, what it costs nothing to run, and what cannot leave GCP. | dan |  |
 | [QUALITY.md](QUALITY.md) | The shared CI: reusable type-check and test workflows, Biome for TypeScript, ruff for Python, and the architecture rules that hold the AGENTS.md invariants as structure. | dan | `.github/workflows/node-ci.yml`, `.github/workflows/python-ci.yml`, `.github/workflows/lint.yml`, `.github/workflows/arch.yml`, `.github/workflows/okf.yml`, `.github/workflows/frontend-guard.yml`, `.github/workflows/agents-guard.yml`, `.github/workflows/no-aws-guard.yml`, `.github/workflows/runner-smoke.yml`, `biome.json`, `ruff.toml`, `.dependency-cruiser.cjs`, `scripts/sync.mjs` |
 | [RUNNING-ON-GCP.md](RUNNING-ON-GCP.md) | How to run, deploy and store things on Google Cloud for KAZ: the free-tier rule, Cloud Run and domain mappings, IAP, Workload Identity Federation, and where captures live. | dan |  |

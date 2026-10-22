@@ -1,14 +1,19 @@
 ---
 type: reference
 title: "Domains and Cloud Run mappings"
-description: "How kaz.markets is wired from Cloudflare DNS into GCP Cloud Run, how to add a service or a static site, and how IAP gates it."
+description: "The Cloud Run domain-mapping and IAP mechanism for kaz.markets, and how to add a service or a static site."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-05T05:30:00Z
+timestamp: 2026-10-21T00:00:00Z
 code: []
 ---
 
 # Domains and Cloud Run mappings
+
+> **Note (2026-10-21):** the kaz-control-era apps this page once mapped - `bracco-app`,
+> `bracco-app-demo`, `kaz-admin`, `reports`, `bet105-skin` and `kaz-msg` - are retired, and
+> no kaz.markets subdomain currently resolves to a Cloud Run domain mapping. This page now
+> documents the mechanism; the live inventory is `kaz-docs/specs/GCP-DEPLOYMENT-INVENTORY.md`.
 
 `kaz.markets` is registered and its DNS is hosted at Cloudflare. GCP project
 `kaz-markets-prod` serves it. There is no load balancer: each subdomain reaches a Cloud Run
@@ -20,14 +25,14 @@ Why not a load balancer: a global external HTTPS load balancer bills while idle,
 ## The shape
 
 ```
-Cloudflare DNS                       GCP (kaz-markets-prod, us-east4)
-  reports.kaz.markets  -- CNAME -->  Cloud Run domain mapping
-    ghs.googlehosted.com               reports.kaz.markets
-    DNS only (grey cloud)                -> Cloud Run service "reports"
+Cloudflare DNS                       GCP (kaz-markets-prod)
+  <service>.kaz.markets  -- CNAME -->  Cloud Run domain mapping
+    ghs.googlehosted.com               <service>.kaz.markets
+    DNS only (grey cloud)                -> Cloud Run service "<service>"
                                            (min-instances 0, IAP gated)
 ```
 
-The name before the dot in the domain (`reports`) is the DNS record name Cloudflare wants.
+The name before the dot in the domain is the DNS record name Cloudflare wants.
 Google serves the certificate; it is provisioned only after the record resolves.
 
 ## Public access and Domain Restricted Sharing
@@ -46,50 +51,7 @@ gcloud run services update "$SERVICE" \
   --project kaz-markets-prod --region us-east4 --no-invoker-iam-check
 ```
 
-Current exceptions: `bracco-app` and `bracco-app-demo` (the two player web app hosts) and
-`bet105-skin` (the bet105 concept book) are public this way for the demo. Treat that as a
-demo posture, not the norm; every other service stays IAP-gated.
-
-## The app pipeline
-
-`kaz-control` carries one deploy action, `.github/actions/cloudrun-deploy`, that does the
-whole job: build the image, push it, deploy, attach the domains, write the DNS records, and
-optionally gate the service with IAP. Each app has a thin caller that names its directory and
-its hostnames:
-
-| Workflow | App | Service | Domains | Gate |
-|---|---|---|---|---|
-| `deploy-app.yml` | `app/` (current development) | `bracco-app-demo` | `demo.kaz.markets` | public |
-| `deploy-original.yml` | `app/` frozen, branch `original-demo` | `bracco-app` | `kaz.markets`, `www.kaz.markets` | public |
-| `deploy-admin.yml` | `admin/` | `kaz-admin` | `admin.kaz.markets` | IAP |
-| `deploy.yml` | `bet105-concept/` | `bet105-skin` | `concept.kaz.markets` | public |
-
-Adding an app is a caller with three values. An author changes code and pushes; the pipeline
-does the rest. DNS is written from the mapping's own `status.resourceRecords`, so the records
-always match what Google issued, and the step is idempotent. The action takes optional
-`context`, `env-vars` and `secrets` inputs too, for an app that builds from its own directory
-or needs environment variables and Secret Manager values on the service.
-
-The pipeline needs two inputs: the repository secret `CLOUDFLARE_API_TOKEN` (Zone/DNS Edit)
-and the repository variable `CF_ZONE_ID`.
-
-## The player app: the apex is frozen, development is on demo (2026-10-05)
-
-The player web app under `kaz-control/app/` is served from two hosts on two Cloud Run
-services, so an in-progress front-end change never changes what a visitor sees at the apex:
-
-- `kaz.markets` and `www.kaz.markets` -> `bracco-app`, the **frozen original**: the first
-  version of the app, kept on the `original-demo` branch in `kaz-control` (commit `6fdb4d8`).
-  It is deployed by hand only, through `deploy-original.yml`.
-- `demo.kaz.markets` -> `bracco-app-demo`, **current development**: whatever is on
-  `kaz-control` `main`, deployed by `deploy-app.yml` on every push to `main`.
-
-Both build from the one Artifact Registry repository `bracco-app`.
-
-Consequence for front-end work: a change merged to `kaz-control` `main` ships to
-`demo.kaz.markets`, not to `kaz.markets`. Nothing merged to `main` updates the apex. Do not
-run `deploy-original.yml` to publish front-end work; it exists to re-publish the frozen
-original. Updating `kaz.markets` is the owner's call.
+Treat that as a demo posture, not the norm; the default is IAP-gated.
 
 ## Domain verification is per account
 
@@ -98,10 +60,9 @@ domains verify` verifies it for the *user* who runs it, not for the project, so 
 created from a developer's terminal works while the same call from the CI service account
 fails with "the provided domain does not appear to be verified for the current account".
 
-Practical consequence: **create each new domain mapping once, from a verified account**, then
-let the pipeline maintain it. The pipeline's attach step skips a mapping that already exists
-and only writes DNS for it, so it stays green. Adding a brand new hostname is therefore a
-one-line operator step, not something an app author does.
+Practical consequence: **create each new domain mapping once, from a verified account**,
+then let the pipeline maintain it. Adding a brand new hostname is a one-line operator step,
+not something an app author does.
 
 ## Add a service
 
@@ -132,7 +93,7 @@ the origin from Google and the managed certificate never issues.
 
 A **root domain** is the exception to the CNAME rule: DNS forbids a CNAME at the apex. Map it
 the same way and Google prints four `A` and four `AAAA` records instead of one CNAME. Add all
-eight, DNS only. `kaz.markets` itself is mapped this way.
+eight, DNS only.
 
 ## Add a static site
 
@@ -185,11 +146,10 @@ to Google sign-in instead of a `403`.
 ## HTTPS is enforced by Google, not Cloudflare
 
 A Cloud Run domain mapping serves HTTPS with a Google-managed certificate, and the Google
-front end answers plain HTTP with a `302` to the `https://` URL. Verified on
-`reports.kaz.markets`:
+front end answers plain HTTP with a `302` to the `https://` URL:
 
 ```
-http://reports.kaz.markets  ->  302  ->  https://reports.kaz.markets/
+http://<service>.kaz.markets  ->  302  ->  https://<service>.kaz.markets/
 ```
 
 So a mapped subdomain is HTTPS-only with no Cloudflare setting involved. Cloudflare's
@@ -233,35 +193,19 @@ loads. IAP has no charge. DNS is free at Cloudflare.
 
 ## Status
 
-- `kaz.markets` (the apex) -> Cloud Run service `bracco-app`, the **frozen original** player
-  web app from `kaz-control/app`. It is the first version that shipped (branch `original-demo`,
-  commit `6fdb4d8`, 2026-10-02) and is deployed by hand only, with `deploy-original.yml`.
-  Public for the demo via `--no-invoker-iam-check`, not IAP.
-- `www.kaz.markets` -> `bracco-app`, the same service as the apex.
-- `demo.kaz.markets` -> Cloud Run service `bracco-app-demo`, the **current development**
-  player web app from `kaz-control` `main`, deployed by `deploy-app.yml` on every push to
-  `main`. Public the same way.
-- `admin.kaz.markets` -> Cloud Run service `kaz-admin`, the back office from
-  `kaz-control/admin`. IAP gated for `domain:kaz.markets`.
-- `reports.kaz.markets` -> Cloud Run service `reports`, IAP gated for `domain:kaz.markets`.
-- `concept.kaz.markets` -> Cloud Run service `bet105-skin`, the bet105 concept book from
-  `kaz-control/bet105-concept`. Public for the demo via `--no-invoker-iam-check`, not IAP.
-- `msg.kaz.markets` -> Cloud Run service `kaz-msg`, the update relay from
-  `kaz-markets/kaz-msg`. Public via `--no-invoker-iam-check`; every write is gated by a
-  bearer token. Live, certificate issued 2026-10-04.
-- `bb.kaz.markets` -> Cloudflare Tunnel `kaz-bot`
-  (`542fdce1-520d-49d0-90d9-06965a008ad4`) to BlueBubbles on the bot Mac. This is a tunnel,
-  not a Cloud Run mapping, so the Mac dials out and needs no inbound firewall. See
-  `kaz-msg/docs/BLUEBUBBLES.md`.
-- DNS at Cloudflare, in the `Dh@drhamilton.dev's Account` zone, all DNS only:
-  `CNAME www`, `CNAME demo`, `CNAME admin`, `CNAME reports`, `CNAME concept`, `CNAME msg` ->
-  `ghs.googlehosted.com`, `CNAME bb` -> the tunnel, and at the apex four `A` plus four `AAAA`
-  records pointing at the addresses Google returned for the mapping.
-- For the Cloud Run mappings, Google issues the managed certificates asynchronously once the
-  records resolve; this can take from minutes to hours. Nothing else is required on our side.
+As of 2026-10-21, no kaz.markets subdomain resolves to a Cloud Run domain mapping. The live
+Cloud Run services are reached on their `*.run.app` URLs (Montreal), not kaz.markets:
+
+- `kaz-core` - the stateless quote engine, called by the Cloudflare Worker.
+- `kaz-adapters` - a pre-Worker Cloud Run artifact, under review.
+- `kaz-landing-page` - deployed in two regions (a duplicate).
+
+`api.kaz.markets` is served by the Cloudflare Worker (`kaz-adapters`), not GCP. `bb.kaz.markets`
+is a Cloudflare Tunnel to the bot Mac, not GCP. The retired kaz-control-era mappings
+(`bracco-app`, `bracco-app-demo`, `kaz-admin`, `reports`, `bet105-skin`, `kaz-msg`) and their
+DNS records are gone. For the full live inventory see `kaz-docs/specs/GCP-DEPLOYMENT-INVENTORY.md`.
 
 ## What this does not cover
 
-- `www.kaz.markets` maps to the player app; a separate marketing site would need its own
-  service and domain.
-- `site/` in `kaz-control` is a local-only portfolio rebuild and must not be deployed.
+- A marketing site at the apex or `www` would need its own service and domain mapping.
+- `site/` in the archived `kaz-control` is a local-only portfolio rebuild and must not be deployed.
