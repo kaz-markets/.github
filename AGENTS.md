@@ -128,6 +128,17 @@ instead of an always-on VM. The current recorded owner exceptions are:
 - D2: `MarketDO` may store per-market books while `kaz-core` computes quotes statelessly.
 - D3: one `VenueFeedDO` per venue may hold a long-lived upstream feed socket.
 
+Loops are spend. Every cron trigger and every Durable Object alarm that re-arms is billed
+requests each tick, and a fan-out multiplies it. On 2026-10-15 an every-minute bootstrap cron
+plus five-second feed alarms issuing one RPC per market per tick drained the 100,000/day
+Durable Object free tier in hours.
+
+- A loop that schedules itself ships behind a flag that is off by default, so stopping it is a
+  var flip, not a deploy.
+- Alarms re-arm from a single code path with a documented floor interval.
+- A pull request that adds or tightens a loop states its steady-state requests per day. A loop
+  nobody counted is a blocker.
+
 ### Demo mode: everything is gated
 
 We are in demo. New surfaces ship behind a flag, off by default. No production credentials,
