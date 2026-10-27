@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 // OKF: check and generate a knowledge bundle.
 //
 //   node scripts/okf.mjs --check
@@ -12,9 +13,9 @@
 //
 // No dependencies. Node 20+.
 
-import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
-import { join, relative, sep, posix } from "node:path";
 import { execFileSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join, posix, relative, sep } from "node:path";
 
 const argv = process.argv.slice(2);
 const has = (name) => argv.includes(name);
@@ -146,8 +147,8 @@ function parityProblems(text) {
   const found = [];
   const linked = new Set();
   const re = /\]\(([^)]+)\)/g;
-  let m;
-  while ((m = re.exec(text)) !== null) {
+  let m = re.exec(text);
+  while (m !== null) {
     const target = m[1].split("#")[0].trim();
     if (!target || /^[a-z]+:/i.test(target) || target.startsWith("/")) continue;
     const resolved = posix.normalize(posix.join(indexDir, target));
@@ -156,6 +157,7 @@ function parityProblems(text) {
     if (resolved.endsWith(".md") && !existsSync(join(root, resolved))) {
       found.push(`${indexRel}: link to ${target} does not exist`);
     }
+    m = re.exec(text);
   }
   for (const { rel } of rows) {
     if (!linked.has(rel)) found.push(`${indexRel}: no row for ${rel}`);
@@ -197,7 +199,10 @@ function changedSince(ref) {
       cwd: root,
       encoding: "utf8",
     });
-    return out.split("\n").map((l) => l.trim()).filter(Boolean);
+    return out
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
   } catch (e) {
     warn(`could not diff against ${ref}: ${String(e.message).split("\n")[0]}`);
     return null;
@@ -210,13 +215,11 @@ if (base) {
     const changedSet = new Set(changed);
     for (const { rel, data } of rows) {
       const globs = Array.isArray(data.code) ? data.code : [];
-      const hit = changed.find((path) =>
-        globs.some((glob) => globToRegExp(glob).test(path))
-      );
+      const hit = changed.find((path) => globs.some((glob) => globToRegExp(glob).test(path)));
       if (hit && !changedSet.has(rel)) {
         fail(
           `${rel}: ${hit} changed in this diff, so this doc is in scope. ` +
-            `Update it in the same PR.`
+            `Update it in the same PR.`,
         );
       }
     }
@@ -226,17 +229,12 @@ if (base) {
 // ------------------------------------------------------------------ output
 
 function table() {
-  const lines = [
-    "| Doc | Covers | Owner | Code |",
-    "| --- | --- | --- | --- |",
-  ];
+  const lines = ["| Doc | Covers | Owner | Code |", "| --- | --- | --- | --- |"];
   for (const { rel, data } of rows) {
     const target = posix.relative(indexDir, rel) || rel;
-    const code = (Array.isArray(data.code) ? data.code : [])
-      .map((c) => `\`${c}\``)
-      .join(", ");
+    const code = (Array.isArray(data.code) ? data.code : []).map((c) => `\`${c}\``).join(", ");
     lines.push(
-      `| [${target}](${target}) | ${data.description ?? ""} | ${data.owner ?? ""} | ${code} |`
+      `| [${target}](${target}) | ${data.description ?? ""} | ${data.owner ?? ""} | ${code} |`,
     );
   }
   return lines.join("\n");
@@ -254,11 +252,7 @@ function regenerate() {
     return;
   }
   const next =
-    indexText.slice(0, start + START.length) +
-    "\n\n" +
-    table() +
-    "\n\n" +
-    indexText.slice(end);
+    indexText.slice(0, start + START.length) + "\n\n" + table() + "\n\n" + indexText.slice(end);
   if (next !== indexText) {
     writeFileSync(indexPath, next);
     console.log(`okf: rewrote the table in ${indexRel}`);
