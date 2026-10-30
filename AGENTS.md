@@ -260,19 +260,26 @@ The architecture check reads `.dependency-cruiser.cjs`, which holds two rules fr
 as structure: a service never imports the front end, and the front end never imports a
 service. Type checks and tests run through the reusable workflows named below.
 
-## The shared checks
+## Continuous integration runs on Cloud Build, never GitHub Actions
 
-- `kaz-markets/.github/.github/workflows/node-ci.yml` - `npm ci`, type check and test one
-  Node workspace. Pass `working-directory` and, when a script is absent, `""`.
-- `kaz-markets/.github/.github/workflows/python-ci.yml` - the same for a Python package:
-  ruff, then pytest.
-- `kaz-markets/.github/.github/workflows/lint.yml` - Biome over the files a pull request
-  changes.
-- `kaz-markets/.github/.github/workflows/arch.yml` - dependency-cruiser over the structural
-  rules, and knip as a report.
-- `kaz-markets/.github/.github/workflows/okf.yml` - frontmatter, index parity, doc freshness.
-- `kaz-markets/.github/.github/workflows/frontend-guard.yml` - flags a front-end diff.
-- `kaz-markets/.github/.github/workflows/agents-guard.yml` - fails when a repository's copy of
-  `AGENTS.md` has drifted from the canonical file here.
-- `scripts/okf.mjs` in this repository is the one implementation. Each repository carries a
-  copy, so `node scripts/okf.mjs --write` works locally. Edit it here, never there.
+Hard rule: no GitHub Actions workflow runs CI for a KAZ repository. GitHub Actions
+billing is unreliable for this organization; Google Cloud Build in `kaz-markets-prod`
+is the CI system. Do not add or re-enable a `.github/workflows/*.yml` job, do not
+require an Actions check on a pull request, and do not treat a stuck or absent
+Actions job as a blocker. When a PR's checks are needed, read the Cloud Build
+result (`gcloud builds list --region=northamerica-northeast1`, the
+`<repo>-pr` and `<repo>-main` triggers) or the `cloudbuild.yaml` steps directly.
+
+- Each repository carries a `cloudbuild.yaml` that runs the shared checks:
+  `ci` (install, type check, tests), `lint` (Biome over the changed files),
+  `okf` (frontmatter, index parity, doc freshness), `agents` (canonical
+  `AGENTS.md` parity), `noaws` (no AWS in the tracked tree), and Python ruff
+  plus pytest where the repo has a `python/` tree.
+- Guard scripts still live in this repository (`scripts/okf.mjs`,
+  `scripts/no-aws-guard.sh`, `scripts/frontend-guard.sh`); Cloud Build pulls
+  them at run time, so a change here updates every pipeline with no per-repo edit.
+- `scripts/okf.mjs` in this repository is the one implementation. Each repository
+  carries a copy, so `node scripts/okf.mjs --write` works locally. Edit it here,
+  never there.
+- Legacy `.github/workflows/` files may still exist in some repositories. They are
+  dead configuration, not the CI; removing them is a cleanup task, not a migration.
