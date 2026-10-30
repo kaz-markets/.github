@@ -1,89 +1,70 @@
 ---
 type: reference
-title: "Hosting and the free tier"
-description: "Where each piece runs, what it costs nothing to run, and what cannot leave GCP."
+title: "European hosting and bounded cost"
+description: "European placement for KAZ cloud services, signing, execution state and secrets, with bounded operating costs."
 owner: dan
-tags: [hosting, gcp, github, free-tier, cost]
-timestamp: 2026-10-02T05:57:00Z
-code: []
+tags: [hosting, gcp, github, europe, cost]
+timestamp: 2026-10-29T00:00:00Z
+code: ["AGENTS.md"]
 ---
 
-# Hosting and the free tier
+# European hosting and bounded cost
 
-Two providers, one rule: GCP **Always Free SKUs**, and GitHub where GitHub is free. The rule
-itself is in `AGENTS.md`; this is the mapping.
+Europe is the long-term requirement for KAZ cloud servers. Keep GCP and use European
+regions; the existing Infomaniak servers in Switzerland are also European infrastructure.
+The owner authorized live integrations and European hosting on 2026-10-29. The previous
+US-only Always Free VM exception and blanket demo-only rules no longer apply.
 
-The split is worth stating plainly because it is not "GCP is the cloud". Most of what a
-platform normally pays a cloud provider for is free on GitHub, and only two things are not.
+## Placement
 
-## Where each piece runs
+A GCP project is not regional. Check the location of each deployed resource, including its
+storage and backups. A European Cloud Run service does not relocate its database, image
+registry, Secret Manager replicas or log bucket.
 
-| Job | Where | Free because |
-|---|---|---|
-| Run repository CI | GitHub Actions, or the `kaztools` self-hosted runner | Hosted is free within the monthly minutes. `kaztools` is a Swiss box with no inbound port; see `SELF-HOSTED-RUNNER.md` |
-| Build a container image | GitHub Actions | 2,000 minutes a month private, unlimited public. Free plan does not overage-bill, it pauses |
-| Store the image | Artifact Registry (in-region), or GHCR | Artifact Registry pulls with the project identity; GHCR is free only for public images. See "Where the images live" |
-| Any cron | Actions `schedule` | Free, but best-effort: runs can be delayed, and a schedule is disabled after 60 days of repository inactivity. Maintenance only, never anything time-critical |
-| Batch work | Actions runners | 2 vCPU, 7GB, 6 hour cap. Simulators, scrapers, migrations, smoke tests |
-| Build output, reports | Releases, or Actions artifacts | Artifacts: 500MB, 90 days. Releases: 100MB per file |
-| Captures and galleries | Cloudflare R2, `assets.kaz.markets` | 10 GB free, no egress charge. Screenshots and QA sweeps are never committed; see `RUNNING-ON-GCP.md` |
-| Static hosting | GitHub Pages | **Public repositories only** on the Free plan. Private repositories need Pro |
-| Tickets, roadmap | Issues, Projects | Free |
-| The socket | GCP, Always Free `e2-micro` | One per month, `us-central1` / `us-west1` / `us-east1`, 30GB disk, 1GB egress |
-| A request-billed service | GCP Cloud Run | 2M requests and 180k vCPU-seconds a month, scale to zero with minimum instances 0 |
-| Database, cache, warehouse | GCP | Firestore and BigQuery have real free quotas. Cloud SQL and Memorystore have none |
-| Secrets at deploy | GCP Secret Manager | 6 active versions, 10k access operations a month |
+| Workload | Required placement |
+| --- | --- |
+| Signing and venue submission | European runtime, no North American fallback |
+| Signing keys and venue credentials | European secret storage and processing |
+| Execution ledger, idempotency, queues and reconciliation | European storage and runtime |
+| Sensitive logs and backups | European regional storage; redact credentials and private keys |
+| Container images and deployment resources | European regional resources |
+| External wallet signing provider | Verify provider processing and key residency separately |
 
-## The two things that cannot move to GitHub
+Stockholm (`europe-north2`) is a candidate for the execution relay. Confirm availability,
+venue permission and networking for the actual deployment before selecting it. Switzerland
+is geographically European but is not an EU jurisdiction; EU-only residency would be a
+separate requirement. Server location never overrides customer eligibility or venue rules.
 
-- **The socket.** It holds a long-lived upstream connection and needs a stable inbound
-  endpoint. An Actions job is capped at 6 hours, has no fixed address, and cannot accept
-  inbound. This is the one workload that genuinely needs a host, and it is why the Always
-  Free `e2-micro` is carved out in `AGENTS.md`.
-- **Persistence.** GitHub has no database. Everything that has to outlive a job stays on GCP.
+## Existing resources and cutover
 
-The private front ends are a third, softer one: Pages needs a public repository on the Free
-plan, so a private app cannot be served from GitHub without Pro.
+Montreal resources are migration sources, not approved signing destinations. Inventory
+services and their dependencies before changing traffic. Preserve in-flight orders, use
+shared durable idempotency where appropriate, and ensure only the intended executor owns
+submission. Do not disable or delete a running service as a default migration step.
 
-## Two GCP traps
+A deployment is not live-ready merely because it starts: verify the credential bindings,
+ledger location, authenticated caller, signing provider and venue connectivity. Do not
+submit a real order or move funds as an agent verification step without explicit approval.
 
-**The trial credit is not the free tier.** The $300 / 90-day credit funds any SKU, including
-paid ones. Use it for a paid resource and the bill arrives on day 91, and billing is now
-enabled on the project. `AGENTS.md` treats it as absent.
+## Cost and execution lifecycle
 
-**Hourly resources bill while idle.** A global external load balancer, Cloud SQL and a NAT
-gateway all charge whether or not anyone is using them. All three are banned by the rule. A
-custom domain on Cloud Run is the one place to check before committing, because some domain
-mapping paths sit behind a load balancer.
+Prefer bounded, request-billed services when appropriate. Persistent venue WebSockets and
+background reconciliation require a runtime with CPU and instance lifetime appropriate to
+that workload; scaling a subscriber to zero is not a general cost fix.
 
-## Where the images live
+European hosting can incur regional compute, image storage, networking, log and secret
+charges. Disclose the resource choices and costs. New paid resource types and commitments
+need the owner's decision. Trial credit is not an ongoing free tier, and a North American
+free resource is not an acceptable substitute for European placement.
 
-Artifact Registry, in the same project and region as the service:
-`$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/<repository>/<image>`. Cloud Run pulls it with the
-project identity, so the image stays private and no registry credential is stored. GHCR was
-the alternative, but a private GHCR package cannot be pulled by Cloud Run without a
-credential; GHCR only helps once an image is public, which is the wrong default for a private
-front end.
+## Images and secrets
 
-Artifact Registry's Always Free storage (0.5 GB) covers `us-central1`, `us-east1` and
-`us-west1`. The services run in `us-east4`, so image storage there is a small paid SKU. Every
-repository carries a cleanup policy so it stays bounded. The policy file is
-`infra/artifact-registry-cleanup-policy.json` beside this bundle:
+Use regional Artifact Registry repositories in the same project and European region as the
+service: `$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/<repository>/<image>`. Bound image
+retention with a reviewed cleanup policy. Do not delete existing images during cutover.
 
-- keep the 5 most recent versions of each package,
-- delete untagged versions older than 7 days (the per-build attestation manifests),
-- delete anything older than 30 days.
-
-Apply or re-apply it, once per repository:
-
-```bash
-gcloud artifacts repositories set-cleanup-policies <repo> \
-  --location=us-east4 --project=kaz-markets-prod \
-  --policy=infra/artifact-registry-cleanup-policy.json
-```
-
-A Keep policy overrides a matching Delete policy, so the recent versions survive the age rules.
-The policy is server-side and is not created by Terraform or a workflow; recreating a
-repository means re-applying it.
-
-Quota figures move. Confirm them against the current pricing pages before relying on them.
+Deploy from CI with Workload Identity Federation, not service-account key files. Configure
+secrets using secret-manager references and least-privilege runtime identities. Never put
+secret values in source, logs, chat or command arguments. Automatic global replication is
+not proof of European residency; inspect the actual replication policy before binding a
+secret to a European service.

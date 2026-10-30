@@ -1,110 +1,75 @@
 ---
 type: reference
 title: "Running on GCP"
-description: "How to run, deploy and store things on Google Cloud for KAZ: the free-tier rule, Cloud Run and domain mappings, IAP, Workload Identity Federation, and where captures live."
+description: "European GCP deployments, live-operation cutovers, authentication, regional storage and secret bindings."
 owner: dan
-tags: [gcp, cloud-run, deploy, free-tier, artifacts]
-timestamp: 2026-10-05T00:05:00Z
+tags: [gcp, cloud-run, deploy, europe, artifacts]
+timestamp: 2026-10-29T00:00:00Z
 code: []
 ---
 
 # Running on GCP
 
-This is the operator's page. `docs/HOSTING.md` says where each piece runs and why it is free;
-`docs/DOMAINS.md` says how a hostname reaches a service. This page says how to actually run
-things, and it is the one place the artifact rules live.
+Read `AGENTS.md` and `HOSTING.md` first. KAZ keeps GCP, with Europe as the long-term
+location requirement. The project is not regional; inspect each resource's location.
 
-Read `AGENTS.md` first. The constraints there are rules, not advice. The three that matter
-most here:
+## Before deploying
 
-- **No paid SKU without the owner's decision, in writing.** Free tier means Always Free SKUs,
-  never the $300 trial credit.
-- **Deploy with Workload Identity Federation, never a service-account key.**
-- **Captures and galleries are never committed.** They live in the CDN.
+- Inventory the current image digest, runtime identity, environment variable names, secret
+  references, storage, networking and callers without printing secret values.
+- Choose a European region supported by the workload. Stockholm (`europe-north2`) is a
+  candidate for venue execution, subject to verified venue and account requirements.
+- Signing and submission have no North American fallback. Their keys, credentials,
+  execution ledger, queues, sensitive logs and backups must remain in Europe too.
+- Verify external signing-provider residency separately. A European API client does not
+  relocate a provider's signing infrastructure.
+- Use an existing approved runtime identity with least-privilege secret access and
+  authenticated service-to-service invocation. Do not create service-account key files.
+- Disclose costs for new resources. European location takes precedence over a North
+  American free tier; new paid resource types and commitments need an owner decision.
 
-## What runs where
+## Deployment and cutover
 
-The full mapping is in `HOSTING.md`. The short version:
+Use a digest-pinned image in a European Artifact Registry repository. Deploy the European
+service without modifying Montreal traffic, then verify its configuration and authenticated
+read-only health endpoints. Keep the approved live provider configuration; do not substitute
+mock providers or introduce demo-only flags.
 
-| Workload | Where | Rule |
-|---|---|---|
-| Builds, images, cron, batch | GitHub Actions, GHCR | Free, and GitHub pauses rather than bills |
-| Request-billed services | Cloud Run, `min-instances=0` | Scale to zero; the free tier covers a project this size |
-| Anything with a public hostname | Cloud Run domain mapping | Free; a load balancer bills while idle and is banned |
-| The socket | Always Free `e2-micro` | The one always-on carve-out; it holds a long-lived connection |
-| Captures and galleries | Cloudflare R2, `assets.kaz.markets` | Never in git |
-| Build output and reports | Releases / Actions artifacts, or the CDN | Never in git |
+A stateless HTTP service may scale to zero. Persistent venue subscriptions and background
+reconciliation need suitable CPU allocation and instance lifetime, which can incur idle
+charges. Do not change running minimum instances as an unsolicited cost optimization.
 
-## Run a service
+Before changing callers, verify durable idempotency, in-flight order reconciliation,
+execution ownership and every signing/submission route. Cloud Run instance limits alone do
+not prevent overlapping revisions or duplicate venue execution. Never retry an uncertain
+submission as a new intent. Do not delete or disable Montreal services as a default cutover
+step, and do not route signing back there as a rollback.
 
-```bash
-SERVICE=my-service
-gcloud run deploy "$SERVICE" \
-  --project=kaz-markets-prod --region=us-east4 \
-  --min-instances=0 --max-instances=2 --port=8080
-```
+A live-ready verification is not permission for an agent to place a real order or move funds.
+Those actions need explicit authorization. Missing partner credentials or an unimplemented
+payment adapter are named blockers, not something a live flag can repair.
 
-`--min-instances=0` is what keeps it in the free tier. `--max-instances` is a cap, not a
-target: it bounds a spike so it cannot scale without limit. Do not set `min-instances` above
-zero; if a workload seems to need it, that is a decision to bring to the owner, not a flag to
-flip.
+## Regional dependencies
 
-Map a hostname with a Cloud Run domain mapping, then add the record it prints in Cloudflare as
-DNS only (grey cloud). `DOMAINS.md` has the exact sequence, including the apex exception and
-the fact that a mapping is created once from a verified account.
+Inspect Secret Manager replication policies; automatic global replication is not proof of
+European residency. Bind pinned secret versions, not raw values in arguments or source.
+A secret's location does not establish the location of the database named inside it.
 
-## Gate a service with IAP
+Inspect database and queue locations, log buckets, retention, backups, build storage and
+image registry locations separately. Moving a Cloud Run service does not move these.
+Document external stores and any residency blockers before cutover.
 
-IAP is the login wall and needs no load balancer:
+## CI and access
 
-```bash
-gcloud beta run services update "$SERVICE" --iap \
-  --project=kaz-markets-prod --region=us-east4
+Deploy from CI using Workload Identity Federation, never a service-account key. Keep
+`GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` consistent with the
+European target. Keep internal execution endpoints authenticated; live operation does not
+mean anonymous order submission. Hostname and access mechanisms are documented in
+`DOMAINS.md`; verify their regional support rather than copying a legacy US command.
 
-gcloud iap web add-iam-policy-binding \
-  --resource-type=cloud-run --service="$SERVICE" --region=us-east4 \
-  --member='domain:kaz.markets' --role='roles/iap.httpsResourceAccessor' \
-  --project=kaz-markets-prod
-```
+## Captures and galleries
 
-The default posture is IAP-gated. A public service is the exception and needs the owner's say;
-under Domain Restricted Sharing the only supported way to make one public is
-`--no-invoker-iam-check`, which is a demo posture, not the norm.
-
-## Deploy from CI
-
-Workflows authenticate with Workload Identity Federation. The repository variables are
-`GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT`; a repository deploys
-by calling the shared deploy action in `kaz-control`. No key file is ever written, and no
-service-account key is stored.
-
-## Where captures live
-
-Screenshots, QA sweeps and archives are **not** committed. They are served from a Cloudflare
-R2 bucket, `kaz-assets`, published at `assets.kaz.markets`. Keys mirror the repository path:
-`kaz-control/app/screens/<file>.png`.
-
-Each repository that used to hold captures lists the moved directories in its `.gitignore`
-and keeps a marker `README.md` in each one pointing at the CDN. To add captures:
-
-```bash
-CLOUDFLARE_ACCOUNT_ID=... CLOUDFLARE_API_TOKEN=... \
-  node scripts/migrate-captures.mjs --repo=<name> --root=<path>
-```
-
-The upload runs through Cloudflare's own Wrangler CLI with a Cloudflare token held as GitHub
-secrets (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`), never committed. No AWS tooling,
-SDK or credential is used; R2 is S3-compatible and Wrangler is the client (see `AGENTS.md`,
-"No AWS").
-
-Why R2 and not GCS: R2 has no egress charge and a 10 GB free tier, and Cloudflare is already
-in the stack for DNS. GCS in `us-east4` is a small paid SKU, which the free-tier rule treats as
-a decision to bring to the owner.
-
-## Troubleshooting quick checks
-
-- A service is billed while idle: it has `min-instances` above zero. Take it to zero.
-- A domain will not resolve: the record is proxied (orange cloud). A mapping needs DNS only.
-- A deploy fails on the domain step: the mapping must exist once from a verified account.
-- `--allow-unauthenticated` "succeeds" but the service stays private: Domain Restricted
-  Sharing, expected. Use the invoker-IAM-check disable, not `allUsers`.
+Screenshots and galleries remain outside git. The existing CDN is Cloudflare R2,
+`assets.kaz.markets`. Public captures must not contain credentials or real user/payment
+data. Sensitive logs and execution evidence require verified European storage, not an
+unverified global bucket. Use Cloudflare tooling for R2, never AWS credentials or SDKs.
