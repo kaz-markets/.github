@@ -55,32 +55,34 @@ not inside the application.
 Hard limits, not preferences. If a task cannot be done inside them, stop and say so. Do not
 work around them.
 
-### Cloud is free tier only
+### European hosting and bounded cost
 
-GCP, and "free tier" means **Always Free SKUs**, not the $300 / 90-day trial credit. The
-credit funds any SKU, so leaning on it buys a bill on day 91 and turns billing on for the
-project. Treat it as absent.
+Europe is the long-term location requirement for KAZ cloud services. Keep GCP and deploy
+services in European regions; the existing Infomaniak servers in Switzerland are also
+European infrastructure. A GCP project is not a region: verify each resource's location.
 
-- No Cloud SQL, no Memorystore, no NAT gateway, no fixed-cost load balancer, no committed
-  use, no paid SKU.
-- Prefer scale-to-zero (Cloud Run with minimum instances 0) and request-billed storage.
-- No always-on VM, with exactly one exception: the Always Free `e2-micro` (one per month, in
-  `us-central1`, `us-west1` or `us-east1`, 30GB standard disk, 1GB egress). It exists for the
-  one workload that cannot run request-billed, the socket, which holds a long-lived upstream
-  connection and needs a stable endpoint. Per-venue sockets may instead run as Cloudflare
-  Durable Objects (D3). Nothing else belongs on it, and 1GB of egress is a real ceiling for a
-  fanout service, so measure before trusting it.
-- Anything else paid is the owner's decision, in writing, before any code.
+- All signing and venue submission must execute in Europe, with no North American fallback.
+- Signing keys, venue credentials, execution state, queues, databases, sensitive logs and
+  backups must stay in Europe. Verify external signing providers separately; a European
+  relay does not establish where a provider performs cryptographic signing.
+- Existing Montreal resources are migration sources, not approved signing destinations.
+  Do not disable, delete or redirect running services without a verified cutover that
+  preserves in-flight execution and prevents duplicate submissions.
+- Prefer bounded, request-billed services where suitable. Persistent venue subscriptions
+  need a runtime that supports background execution; do not scale them to zero blindly.
+- Do not select a North American resource to obtain a free tier. European regional costs
+  must be disclosed; new paid resource types or commitments need the owner's decision.
+- Hosting location never replaces venue eligibility, KYC or jurisdiction enforcement.
 
 ### Data is minimised
 
 - Feed data is transient. Cache it with a TTL and bound the change log. No long-term feed
   history, no archive, no replay store beyond the resume window.
-- No real user data. Ever. Not in a fixture, a seed, a test or a database. Demo and
-  development run on fake players.
-- No real payment data. No card number, no bank details, no processor credentials, no live
-  processor. Payments stay a mock behind an adapter.
-- Every external capability is an interface with a local mock, and the mock is the default.
+- Fixtures, seeds, tests and development use fake players, never copied production data.
+- Production may use owner-authorized live providers and the minimum user data required.
+  Keep raw card and bank details with the authorized payment provider, not in KAZ logs or code.
+- Every external capability stays behind an interface with a local mock. Mocks are for
+  offline development, not silent substitutes for live production execution.
 
 ### Stack
 
@@ -133,26 +135,30 @@ requests each tick, and a fan-out multiplies it. On 2026-10-15 an every-minute b
 plus five-second feed alarms issuing one RPC per market per tick drained the 100,000/day
 Durable Object free tier in hours.
 
-- A loop that schedules itself ships behind a flag that is off by default, so stopping it is a
-  var flip, not a deploy.
+- Self-scheduling loops have explicit operational controls and documented cost. Preserve
+  approved live settings; do not add an off-by-default gate to a required production loop.
 - Alarms re-arm from a single code path with a documented floor interval.
 - A pull request that adds or tightens a loop states its steady-state requests per day. A loop
   nobody counted is a blocker.
 
-### Demo mode: everything is gated
+### Live operation
 
-We are in demo. New surfaces ship behind a flag, off by default. No production credentials,
-no live providers, no real traffic, no public write path. Seed data is fake. Gating is the
-rule, not the exception.
+KAZ is preparing for live operation, not a demo-only platform. Owner-authorized live
+integrations may use production credentials and submit real customer-authorized orders.
+Do not add demo-only gates, switch providers to mock mode, or disable running capabilities
+as a default workflow. Preserve authentication, authorization, venue eligibility, risk
+limits, idempotency and reconciliation. Never claim an unimplemented provider works merely
+because its live flag is set. Agent verification must not place real orders or move funds
+without explicit authorization for those actions.
 
 ## Running things on GCP
 
-The platform runs on GCP. The free-tier rule and where each piece runs are in
+The platform runs on GCP. European placement, cost controls and where each piece runs are in
 `docs/HOSTING.md`; hostname wiring is in `docs/DOMAINS.md`; the day-to-day commands are in
 `docs/RUNNING-ON-GCP.md`. Three things are rules, not advice:
 
-- **No paid SKU without the owner's decision, in writing.** Free tier means Always Free SKUs,
-  never the trial credit.
+- **Europe first, bounded cost.** Use European resources and disclose their costs. New paid
+  resource types or commitments need the owner's decision; trial credit is not a free tier.
 - **Deploy with Workload Identity Federation, never a service-account key.**
 - **Captures and galleries are never committed.** Screenshots, QA sweeps and archives live in
   the CDN (Cloudflare R2, `assets.kaz.markets`); git holds code and runtime assets only. See
@@ -221,8 +227,10 @@ Devin GitHub app is scoped to and opens PRs like any contributor.
   number.
 - Devin never merges its own pull requests: `main` protection requires Dan's
   review. A Devin PR is a proposal, not a deployment.
-- Never touch secrets, `.env*` files, wallet keys, or CI workflow files. If the
-  task seems to need one, stop and comment on the PR instead.
+- With explicit owner authorization, configure existing secrets and signer bindings through
+  the deployment's secret manager. Never print secret values, put them in command arguments,
+  commit them, or copy production keys into development. Prefer secret references over raw
+  key access. CI workflow changes still require an explicit task request.
 - Vercel and Cloudflare deploy on merge — a merged PR is a production event.
   Keep PRs small and say in the PR body when a change is deploy-sensitive.
 - The front end bounds, docs-first rule and knowledge-bundle rule in this file
@@ -233,7 +241,8 @@ Devin GitHub app is scoped to and opens PRs like any contributor.
 
 ## Ground rules
 
-- Fake players only. No real provider, keys or account is contacted from these repos.
+- Fake players in fixtures and development. Live providers and accounts are permitted for
+  owner-authorized production work, subject to the live-operation and European-hosting rules.
 - Never commit `.env*`, any `CREDENTIALS.md`, `.data-*` or native build output.
 - No em or en dashes, and no bet or wager wording, in player-facing copy.
 
