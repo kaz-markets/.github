@@ -4,7 +4,7 @@ title: "Running on GCP"
 description: "European GCP deployments, live-operation cutovers, authentication, regional storage and secret bindings."
 owner: dan
 tags: [gcp, cloud-run, deploy, europe, artifacts]
-timestamp: 2026-10-29T00:00:00Z
+timestamp: 2026-11-01T00:00:00Z
 code: []
 ---
 
@@ -61,11 +61,68 @@ Document external stores and any residency blockers before cutover.
 
 ## CI and access
 
-Deploy from CI using Workload Identity Federation, never a service-account key. Keep
-`GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER` and `WIF_SERVICE_ACCOUNT` consistent with the
-European target. Keep internal execution endpoints authenticated; live operation does not
-mean anonymous order submission. Hostname and access mechanisms are documented in
-`DOMAINS.md`; verify their regional support rather than copying a legacy US command.
+Builds and deployments running inside Cloud Build use an attached service account and
+Google-issued short-lived credentials. They do not depend on a workstation's user login.
+External automation uses Workload Identity Federation when an approved identity provider
+is available. Neither path uses a downloaded service-account key. Local impersonation
+still depends on the source user's login and does not bypass reauthentication policy.
+
+The keyless identities provisioned in `kaz-markets-prod` on 2026-11-01 are:
+
+| Account prefix | Purpose | Access |
+| --- | --- | --- |
+| `kaz-build-ci` | Pull request and main-branch checks | Log writer only; no production secrets, deployment or runtime impersonation |
+| `kaz-build-deploy` | Trusted deployment builds | Log writer, writer on the Stockholm `kaz` image repository, act-as on the three runtime accounts only; service update grants await bootstrap |
+| `kaz-feed-runtime` | European catalogue and push feed | No project roles or secret access provisioned yet |
+| `kaz-core-runtime` | European quote service | No project roles or secret access provisioned yet |
+| `kaz-execution-runtime` | European execution service | No project roles or secret access provisioned yet |
+
+Each prefix expands to `<prefix>@kaz-markets-prod.iam.gserviceaccount.com`. None has a
+user-managed key. Grant runtime access only to the specific European secrets and services
+that the implemented workload requires, not project-wide Secret Accessor or Editor.
+
+The custom `kazRunDeployer` role permits service updates and service-status reads, not
+creation, deletion, invocation or IAM policy administration. It has no project-level
+binding. Bootstrap the actual European services using an authorized administrator, then
+grant this role directly on each approved service. Do not attach it project-wide. A
+Stockholm validation-only create request failed under proposed resource-name conditions;
+those ineffective bindings were removed rather than widened. No validation service was
+created. The deployment identity cannot act as the default Compute account. Public access
+configuration, if required, remains an owner-controlled bootstrap operation.
+
+All 16 existing `<repo>-pr` and `<repo>-main` Cloud Build triggers now use `kaz-build-ci`,
+not the default Compute runtime identity. These triggers are checks, not deployment
+pipelines. Never attach the privileged deployment identity to an untrusted pull request
+trigger or a build configuration controlled by one.
+
+Stockholm build `46240f4d-8908-4509-bf35-d7f58e457180` passed the attached CI identity
+and permission checks. Build `cb89829d-703d-4d66-91dd-f503f3f813b9` passed the final
+attached deployment identity, three runtime act-as bindings, European artifact upload,
+and absence of project deployment, IAM administration and secret-access permissions.
+The post-change trigger detector found no trigger using another identity; user-managed
+key listings for all five accounts were empty. These smoke checks do not assert that
+an application deployment pipeline or runtime secret bindings are complete.
+
+### Migration state
+
+The existing GitHub connection, its regional OAuth secret reference and the 16 repository
+triggers are still in `northamerica-northeast1`. No credentials were copied or read to
+move them. The Stockholm Artifact Registry repository is
+`europe-north2-docker.pkg.dev/kaz-markets-prod/kaz`. New identity smoke builds run in
+`europe-north2`; they use Cloud Logging and contain only technical account/permission
+results, not user data or secrets. The project's current default log bucket is global;
+sensitive production logs require a verified European destination before cutover.
+
+The runtime accounts are prepared for the European deployment, not attached to existing
+Montreal services. Existing services, default-account grants, legacy federation bindings
+and secret replication policies are unchanged. The current core service token is still
+Montreal-replicated. Source-connection migration, European secret/log bindings, trusted
+main-branch deployment configuration and production cutover remain part of the approved
+market-serving implementation; creating these accounts does not claim those are shipped.
+
+Keep internal execution endpoints authenticated; live operation does not mean anonymous
+order submission. Hostname and access mechanisms are documented in `DOMAINS.md`; verify
+their regional support rather than copying a legacy US command.
 
 ## Captures and galleries
 
