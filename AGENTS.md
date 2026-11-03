@@ -151,6 +151,26 @@ limits, idempotency and reconciliation. Never claim an unimplemented provider wo
 because its live flag is set. Agent verification must not place real orders or move funds
 without explicit authorization for those actions.
 
+### Production is the goal. No invented blockers.
+
+Dan is the only backend developer. Every backend, platform, KAZ, routing, signing and
+infrastructure choice in these repositories was made by us: there is no other team, no
+"someone" who added a rule on purpose, no owner to defer to but Dan. When an earlier choice is
+wrong or in the way, change it.
+
+- When Dan says make it live, ship it to production: change the code, config, secret or
+  running service, verify it, report. Do not stop at staging, a proposal or a question.
+- Routine production steps Dan asked for need no further permission: deploys, config and env
+  changes, secret rotation through the secret manager, registering keys, fixing a live service.
+- Ask first only for: irreversible data loss, placing real orders or moving funds, a legal or
+  compliance decision, or a new paid resource type.
+- A blocker is only access we do not have or work not built yet. "Someone added this on
+  purpose", "a test covers it", "production is risky" and "another session owns it" are not
+  blockers. Another live session is only a reason not to edit the same files at the same
+  time; say which files and keep going on the rest.
+- Never sit in a long wait (build, push, deploy, CI). Start it in the background, keep working,
+  check once.
+
 ## Running things on GCP
 
 The platform runs on GCP. European placement, cost controls and where each piece runs are in
