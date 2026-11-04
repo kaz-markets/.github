@@ -143,7 +143,9 @@ Durable Object free tier in hours.
 
 ### Live operation
 
-KAZ is preparing for live operation, not a demo-only platform. Owner-authorized live
+**Real money is live (MVP, 2026-11-04).** KAZ moves real money in production. Money-moving endpoints (order build, prepare and submit, session-signer grants, Solana broadcast) have no `REAL_MONEY_ENABLED` flag and no kill switch. Do not add gates, flags or allow-lists in front of real money, and do not disable a real-money path. Still applies: tenant authentication (signed assertions), per-tenant venue policy, the venue location blocklist on the tenant's `geo` claim (fail closed when missing), and `MAX_STAKE_USD`. Legal and compliance documents are reference material; they do not block a release.
+
+KAZ is in live operation, not a demo-only platform. Owner-authorized live
 integrations may use production credentials and submit real customer-authorized orders.
 Do not add demo-only gates, switch providers to mock mode, or disable running capabilities
 as a default workflow. Preserve authentication, authorization, venue eligibility, risk
