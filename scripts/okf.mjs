@@ -15,7 +15,7 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, posix, relative, sep } from "node:path";
+import { basename, join, posix, relative, sep } from "node:path";
 
 const argv = process.argv.slice(2);
 const has = (name) => argv.includes(name);
@@ -100,7 +100,11 @@ function parseDoc(file) {
 const bundlePath = join(root, bundle);
 const indexPath = join(root, indexRel);
 const files = walk(bundlePath).sort();
-const docs = files.filter((f) => relative(root, f) !== indexRel);
+// AGENTS.md is agent configuration synced from the canonical copy, not an OKF
+// doc: it carries no frontmatter by design and is never indexed.
+const docs = files.filter(
+  (f) => relative(root, f) !== indexRel && basename(f) !== "AGENTS.md",
+);
 
 if (files.length === 0) {
   warn(`no bundle at ${bundle}/ yet; nothing to check`);
