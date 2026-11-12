@@ -4,7 +4,7 @@ title: "Domains and Cloud Run mappings"
 description: "The Cloud Run domain-mapping and IAP mechanism for kaz.markets, and how to add a service or a static site."
 owner: dan
 tags: [gcp, cloudflare, dns, cloud-run, hosting]
-timestamp: 2026-10-21T00:00:00Z
+timestamp: 2026-11-11T00:00:00Z
 code: []
 ---
 
@@ -13,7 +13,7 @@ code: []
 > **Note (2026-10-21):** the kaz-control-era apps this page once mapped - `bracco-app`,
 > `bracco-app-demo`, `kaz-admin`, `reports`, `bet105-skin` and `kaz-msg` - are retired, and
 > no kaz.markets subdomain currently resolves to a Cloud Run domain mapping. This page now
-> documents the mechanism; the live inventory is `kaz-docs/specs/GCP-DEPLOYMENT-INVENTORY.md`.
+> documents the mechanism; there is no central inventory doc; the live state is `kaz-adapters/STATUS.md` plus each service repo's own README and deploy script.
 
 `kaz.markets` is registered and its DNS is hosted at Cloudflare. GCP project
 `kaz-markets-prod` serves it. There is no load balancer: each subdomain reaches a Cloud Run
@@ -203,7 +203,7 @@ Cloud Run services are reached on their `*.run.app` URLs (Montreal), not kaz.mar
 `api.kaz.markets` is served by the Cloudflare Worker (`kaz-adapters`), not GCP. `bb.kaz.markets`
 is a Cloudflare Tunnel to the bot Mac, not GCP. The retired kaz-control-era mappings
 (`bracco-app`, `bracco-app-demo`, `kaz-admin`, `reports`, `bet105-skin`, `kaz-msg`) and their
-DNS records are gone. For the full live inventory see `kaz-docs/specs/GCP-DEPLOYMENT-INVENTORY.md`.
+DNS records are gone. For the live inventory see `kaz-adapters/STATUS.md` and each service repo's README and deploy script; no central spec exists yet.
 
 ## What this does not cover
 
