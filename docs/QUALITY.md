@@ -4,7 +4,7 @@ title: "Quality checks"
 description: "The shared CI: reusable type-check and test workflows, Biome for TypeScript, ruff for Python, and the architecture rules that hold the AGENTS.md invariants as structure."
 owner: dan
 tags: [ci, quality, biome, ruff, testing, architecture]
-timestamp: 2026-10-20T06:30:00Z
+timestamp: 2026-11-11T00:00:00Z
 code: [".github/workflows/node-ci.yml", ".github/workflows/python-ci.yml", ".github/workflows/lint.yml", ".github/workflows/arch.yml", ".github/workflows/okf.yml", ".github/workflows/frontend-guard.yml", ".github/workflows/agents-guard.yml", ".github/workflows/no-aws-guard.yml", ".github/workflows/runner-smoke.yml", "biome.json", "ruff.toml", ".dependency-cruiser.cjs", "scripts/sync.mjs"]
 ---
 
@@ -14,6 +14,15 @@ Every repository's checks are reusable workflows in this repository. A repositor
 does not hand-write steps; it calls the workflow and passes what differs. The rules and
 formatter settings are three configuration files synced out by `scripts/sync.mjs`, so the
 standard is one place.
+
+## Where CI actually runs for kaz-markets
+
+For `kaz-markets` repositories the checks run on **Google Cloud Build**
+(`kaz-markets-prod`), never GitHub Actions: each repository carries a
+`cloudbuild.yaml` that invokes the same shared checks, and Cloud Build posts
+the result. The reusable workflows below remain for repositories that still
+use Actions runners (and for reference); do not add a GitHub Actions job to
+a `kaz-markets` repository.
 
 ## The workflows
 
