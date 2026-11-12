@@ -4,18 +4,20 @@
 //
 //   node scripts/okf.mjs --check
 //   node scripts/okf.mjs --check --base origin/main
+//   node scripts/okf.mjs --check --freshness
 //   node scripts/okf.mjs --write
 //
 // Validates every doc under the bundle: frontmatter present and well formed, and
 // the generated block of the index in parity with the files on disk. With
 // --base <ref>, also fails when a diff touches code a doc covers and that doc is
-// not in the same diff.
+// not in the same diff. --freshness adds advisory warnings for docs whose
+// timestamp predates the last commit touching their `code:` paths.
 //
 // No dependencies. Node 20+.
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, posix, relative, sep } from "node:path";
+import { basename, join, posix, relative, sep } from "node:path";
 
 const argv = process.argv.slice(2);
 const has = (name) => argv.includes(name);
@@ -100,7 +102,11 @@ function parseDoc(file) {
 const bundlePath = join(root, bundle);
 const indexPath = join(root, indexRel);
 const files = walk(bundlePath).sort();
-const docs = files.filter((f) => relative(root, f) !== indexRel);
+// AGENTS.md is agent configuration synced from the canonical copy, not an OKF
+// doc: it carries no frontmatter by design and is never indexed.
+const docs = files.filter(
+  (f) => relative(root, f) !== indexRel && basename(f) !== "AGENTS.md",
+);
 
 if (files.length === 0) {
   warn(`no bundle at ${bundle}/ yet; nothing to check`);
@@ -266,6 +272,40 @@ if (write && errors.length === 0) {
   if (existsSync(indexPath)) {
     for (const problem of parityProblems(readFileSync(indexPath, "utf8"))) fail(problem);
   }
+}
+
+// ------------------------------------------------------------- freshness
+
+// Advisory: a doc whose `code:` paths changed after its timestamp may be
+// stale. Warnings only — a correct doc need not be edited, so this never
+// fails the check.
+if (has("--freshness")) {
+  let stale = 0;
+  for (const { rel, data } of rows) {
+    const ts = Date.parse(data.timestamp ?? "");
+    if (Number.isNaN(ts)) continue;
+    let newest = 0;
+    for (const pattern of data.code ?? []) {
+      try {
+        const out = execFileSync(
+          "git",
+          ["log", "-1", "--format=%cI", "--", pattern],
+          { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+        ).trim();
+        const t = Date.parse(out);
+        if (!Number.isNaN(t) && t > newest) newest = t;
+      } catch {
+        // Pathspec matched nothing or git is unavailable: skip it.
+      }
+    }
+    if (newest > ts) {
+      stale += 1;
+      warn(
+        `freshness: ${rel} (code last changed ${new Date(newest).toISOString().slice(0, 10)})`,
+      );
+    }
+  }
+  if (stale === 0) console.log("okf: freshness: all docs current");
 }
 
 for (const w of warnings) console.log(`okf: note: ${w}`);
