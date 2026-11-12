@@ -52,6 +52,30 @@
       "name": ".github",
       "owner": "danhamilt",
       "frontend": false
+    },
+    {
+      "name": "kaz-feed-service",
+      "owner": "danhamilt",
+      "bundle": false,
+      "frontend": false
+    },
+    {
+      "name": "openbook-translate-4casters",
+      "owner": "danhamilt",
+      "bundle": false,
+      "frontend": false
+    },
+    {
+      "name": "pairmutual",
+      "owner": "danhamilt",
+      "bundle": false,
+      "frontend": false
+    },
+    {
+      "name": "rc",
+      "owner": "danhamilt",
+      "bundle": false,
+      "frontend": false
     }
   ]
 }
