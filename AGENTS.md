@@ -129,6 +129,11 @@ instead of an always-on VM. The current recorded owner exceptions are:
   not rewritten".
 - D2: `MarketDO` may store per-market books while `kaz-core` computes quotes statelessly.
 - D3: one `VenueFeedDO` per venue may hold a long-lived upstream feed socket.
+- D4: a fan-out tree of Durable Objects may hold hibernatable tenant price
+  WebSockets and relay producer-pushed boards and price deltas (feed delivery
+  phase 2, `docs/FEED-DELIVERY.md` in `kaz-adapters`). WebSockets must use the
+  hibernation API: `accept()` bills duration for the life of the connection and
+  the exception is sized on the recorded cost estimate in that doc.
 
 Loops are spend. Every cron trigger and every Durable Object alarm that re-arms is billed
 requests each tick, and a fan-out multiplies it. On 2026-10-15 an every-minute bootstrap cron
