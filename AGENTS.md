@@ -61,16 +61,19 @@ Europe is the long-term location requirement for KAZ cloud services. Keep GCP an
 services in European regions; the existing Infomaniak servers in Switzerland are also
 European infrastructure. A GCP project is not a region: verify each resource's location.
 
-- All signing and venue submission must execute in Europe, with no North American fallback.
+- All signing and venue submission must execute in Europe, with no non-European fallback.
 - Signing keys, venue credentials, execution state, queues, databases, sensitive logs and
   backups must stay in Europe. Verify external signing providers separately; a European
   relay does not establish where a provider performs cryptographic signing.
-- Existing Montreal resources are migration sources, not approved signing destinations.
-  Do not disable, delete or redirect running services without a verified cutover that
-  preserves in-flight execution and prevents duplicate submissions.
+- All production resources are European. Do not disable, delete or redirect running
+  services without a verified cutover that preserves in-flight execution and prevents
+  duplicate submissions.
+- Production is Europe, and so is CI. A non-European region, hostname or provider
+  location does not belong in a rule, doc, script or config. If one exists it is
+  outstanding work: move it, or stop and report it.
 - Prefer bounded, request-billed services where suitable. Persistent venue subscriptions
   need a runtime that supports background execution; do not scale them to zero blindly.
-- Do not select a North American resource to obtain a free tier. European regional costs
+- Do not select a non-European resource to obtain a free tier. European regional costs
   must be disclosed; new paid resource types or commitments need the owner's decision.
 - Hosting location never replaces venue eligibility, KYC or jurisdiction enforcement.
 
@@ -294,8 +297,8 @@ billing is unreliable for this organization; Google Cloud Build in `kaz-markets-
 is the CI system. Do not add or re-enable a `.github/workflows/*.yml` job, do not
 require an Actions check on a pull request, and do not treat a stuck or absent
 Actions job as a blocker. When a PR's checks are needed, read the Cloud Build
-result (`gcloud builds list --region=northamerica-northeast1`, the
-`<repo>-pr` and `<repo>-main` triggers) or the `cloudbuild.yaml` steps directly.
+result (`gcloud builds list --project=kaz-markets-prod`, the `<repo>-pr` and
+`<repo>-main` triggers) or the `cloudbuild.yaml` steps directly.
 
 - Each repository carries a `cloudbuild.yaml` that runs the shared checks:
   `ci` (install, type check, tests), `lint` (Biome over the changed files),
