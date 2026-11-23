@@ -19,21 +19,21 @@ location requirement. The project is not regional; inspect each resource's locat
   references, storage, networking and callers without printing secret values.
 - Choose a European region supported by the workload. Stockholm (`europe-north2`) is a
   candidate for venue execution, subject to verified venue and account requirements.
-- Signing and submission have no North American fallback. Their keys, credentials,
+- Signing and submission have no non-European fallback. Their keys, credentials,
   execution ledger, queues, sensitive logs and backups must remain in Europe too.
 - Verify external signing-provider residency separately. A European API client does not
   relocate a provider's signing infrastructure.
 - Use an existing approved runtime identity with least-privilege secret access and
   authenticated service-to-service invocation. Do not create service-account key files.
-- Disclose costs for new resources. European location takes precedence over a North
-  American free tier; new paid resource types and commitments need an owner decision.
+- Disclose costs for new resources. European location takes precedence over a
+  non-European free tier; new paid resource types and commitments need an owner decision.
 
 ## Deployment and cutover
 
 Use a digest-pinned image in a European Artifact Registry repository. Deploy the European
-service without modifying Montreal traffic, then verify its configuration and authenticated
-read-only health endpoints. Keep the approved live provider configuration; do not substitute
-mock providers or introduce demo-only flags.
+service, then verify its configuration and authenticated read-only health endpoints. Keep the
+approved live provider configuration; do not substitute mock providers or introduce
+demo-only flags.
 
 A stateless HTTP service may scale to zero. Persistent venue subscriptions and background
 reconciliation need suitable CPU allocation and instance lifetime, which can incur idle
@@ -42,8 +42,8 @@ charges. Do not change running minimum instances as an unsolicited cost optimiza
 Before changing callers, verify durable idempotency, in-flight order reconciliation,
 execution ownership and every signing/submission route. Cloud Run instance limits alone do
 not prevent overlapping revisions or duplicate venue execution. Never retry an uncertain
-submission as a new intent. Do not delete or disable Montreal services as a default cutover
-step, and do not route signing back there as a rollback.
+submission as a new intent. Do not delete or disable the live European service as a default
+cutover step, and do not route signing to a non-European region as a rollback.
 
 A live-ready verification is not permission for an agent to place a real order or move funds.
 Those actions need explicit authorization. Missing partner credentials or an unimplemented

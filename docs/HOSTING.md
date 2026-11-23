@@ -23,7 +23,7 @@ registry, Secret Manager replicas or log bucket.
 
 | Workload | Required placement |
 | --- | --- |
-| Signing and venue submission | European runtime, no North American fallback |
+| Signing and venue submission | European runtime, no non-European fallback |
 | Signing keys and venue credentials | European secret storage and processing |
 | Execution ledger, idempotency, queues and reconciliation | European storage and runtime |
 | Sensitive logs and backups | European regional storage; redact credentials and private keys |
@@ -37,10 +37,10 @@ separate requirement. Server location never overrides customer eligibility or ve
 
 ## Existing resources and cutover
 
-Montreal resources are migration sources, not approved signing destinations. Inventory
-services and their dependencies before changing traffic. Preserve in-flight orders, use
-shared durable idempotency where appropriate, and ensure only the intended executor owns
-submission. Do not disable or delete a running service as a default migration step.
+All production resources are European. Inventory services and their dependencies before
+changing traffic. Preserve in-flight orders, use shared durable idempotency where
+appropriate, and ensure only the intended executor owns submission. Do not disable or
+delete a running service as a default cutover step.
 
 A deployment is not live-ready merely because it starts: verify the credential bindings,
 ledger location, authenticated caller, signing provider and venue connectivity. Do not
@@ -54,7 +54,7 @@ that workload; scaling a subscriber to zero is not a general cost fix.
 
 European hosting can incur regional compute, image storage, networking, log and secret
 charges. Disclose the resource choices and costs. New paid resource types and commitments
-need the owner's decision. Trial credit is not an ongoing free tier, and a North American
+need the owner's decision. Trial credit is not an ongoing free tier, and a non-European
 free resource is not an acceptable substitute for European placement.
 
 ## Images and secrets

@@ -188,13 +188,13 @@ Registry) does not use these grants. They are only for building inside Cloud Bui
 
 A domain mapping is free. The service is Cloud Run Always Free while it stays at
 `min-instances=0`: 2M requests, 180k vCPU-seconds and 360k GiB-seconds a month. The one real
-ceiling is **1 GiB of egress a month** from North America; an 82 KB page is about 13,000
+ceiling is **1 GiB of Always Free egress a month**; an 82 KB page is about 13,000
 loads. IAP has no charge. DNS is free at Cloudflare.
 
 ## Status
 
 As of 2026-10-21, no kaz.markets subdomain resolves to a Cloud Run domain mapping. The live
-Cloud Run services are reached on their `*.run.app` URLs (Montreal), not kaz.markets:
+Cloud Run services are reached on their `*.run.app` URLs (Europe), not kaz.markets:
 
 - `kaz-core` - the stateless quote engine, called by the Cloudflare Worker.
 - `kaz-adapters` - a pre-Worker Cloud Run artifact, under review.
